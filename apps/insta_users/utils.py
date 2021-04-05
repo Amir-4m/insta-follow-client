@@ -62,13 +62,14 @@ def get_insta_follow_order_by_action(instauser, action):
     params = dict(page_size=5, action=action)
 
     logger.debug(
-        f"[getting instafollow orders]-[URL: {url}]-[insta user id: {instauser.id}]-[action: {action}]"
-        f"-[params: {params}]"
+        f"[getting instafollow orders]-[URL: {url}]-[insta user id: {instauser.id}]-[params: {params}]"
     )
+    # TODO needs to fill this field `server_key` here ??
     if not instauser.server_key:
         logger.warning(f'[insta user has no server key]-[skipping this action]')
         return
 
+    # getting orders from api
     try:
         headers = dict(Authorization=get_insta_follow_token(instauser.server_key))
         response = requests.get(url, params=params, headers=headers)
