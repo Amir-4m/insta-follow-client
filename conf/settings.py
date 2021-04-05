@@ -15,23 +15,22 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 from decouple import config, Csv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config("DEBUG", default=False, cast=bool)
+DEVEL = config("DEVEL", default=False, cast=bool)
+
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost', cast=Csv())
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config("SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost', cast=Csv())
-
-
 # Application definition
-
 INSTALLED_APPS = [
     # Local
     'apps.insta_users',
@@ -57,7 +56,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+WSGI_APPLICATION = 'conf.wsgi.application'
 ROOT_URLCONF = 'conf.urls'
+APPEND_SLASH = False
 
 TEMPLATES = [
     {
@@ -75,27 +76,36 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'conf.wsgi.application'
-
-
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.postgresql_psycopg2'),
-        'HOST': config('DB_HOST', default=''),
-        'PORT': config('DB_PORT', default=''),
+        'ENGINE': config('DB_ENGINE'),
         'NAME': config('DB_NAME'),
         'USER': config('DB_USER'),
         'PASSWORD': config('DB_PASS'),
-    }
+        'HOST': config('DB_HOST', default=""),
+        'PORT': config('DB_PORT', default=""),
+    },
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': config('CACHE_BACKEND', default='django.core.cache.backends.locmem.LocMemCache'),
+        'LOCATION': config('CACHE_HOST', default=''),
+        'KEY_PREFIX': 'INSTA_FOLLOW',
+    },
+
+}
+
+CELERY_BROKER_URL = 'amqp://%(USER)s:%(PASS)s@%(HOST)s' % {
+    'USER': config('CELERY_USER'),
+    'PASS': config('CELERY_PASS'),
+    'HOST': config('CELERY_HOST'),
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -111,24 +121,17 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-
+LANGUAGE_CODE = 'fa-ir'
 TIME_ZONE = 'Asia/Tehran'
-
-USE_I18N = True
-
-USE_L10N = True
-
-USE_TZ = True
-
+USE_I18N = False
+USE_L10N = False
+USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
-
+STATIC_ROOT = BASE_DIR / 'static'
 STATIC_URL = '/static/'
 
 LOG_DIR = BASE_DIR / 'logs'
@@ -195,3 +198,6 @@ LOGGING = {
         }
     },
 }
+
+# Custom Values
+INSTAFOLLOW_BASE_URL = config('INSTAFOLLOW_BASE_URL', cast=str)
