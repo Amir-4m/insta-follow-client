@@ -3,3 +3,5 @@ django~=3.1
 python-decouple
 psycopg2-binary
 requests
+
+pycrypto==2.6.1
