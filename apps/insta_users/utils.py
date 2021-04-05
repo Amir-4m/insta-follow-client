@@ -4,11 +4,15 @@ from datetime import datetime
 from base64 import b64decode, b64encode
 
 from django.utils.encoding import smart_text
+from django.conf import settings
 
+import requests
 from Crypto.Cipher import AES
 from Crypto import Random
 
 logger = logging.getLogger(__file__)
+
+INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/orders/'
 
 
 class CryptoService:
@@ -53,3 +57,33 @@ def get_insta_follow_token(insta_user_server_key):
     return f'Token {smart_text(token)}'
 
 
+def get_insta_follow_order_by_action(instauser, action):
+    url = f'{INSTA_FOLLOW_ORDERS_URL}'
+    params = dict(page_size=5, action=action)
+
+    logger.debug(
+        f"[getting instafollow orders]-[URL: {url}]-[insta user id: {instauser.id}]-[action: {action}]"
+        f"-[params: {params}]"
+    )
+    if not instauser.server_key:
+        logger.warning(f'[insta user has no server key]-[skipping this action]')
+        return
+
+    try:
+        headers = dict(Authorization=get_insta_follow_token(instauser.server_key))
+        response = requests.get(url, params=params, headers=headers)
+
+    except requests.exceptions.HTTPError as e:
+        logger.warning(
+            f'[making request failed]-[URL: {url}]-[status code: {e.response.status_code}]'
+            f'-[response err: {e.response.text}]-[exc: {e}]'
+        )
+        return
+    except requests.exceptions.ConnectTimeout as e:
+        logger.critical(f'[request failed]-[URL: {url}]-[exc: {e}]')
+        return
+    except Exception as e:
+        logger.error(f'[request failed]-[URL: {url}]-[exc: {e}]')
+        return
+
+    return response.json()
