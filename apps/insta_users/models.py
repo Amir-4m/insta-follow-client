@@ -9,6 +9,7 @@ class InstaUser(models.Model):
     password = models.CharField(_("password"), max_length=128)
     user_id = models.BigIntegerField(_("user ID"), blank=True, null=True)
     session = models.TextField(_("session"), blank=True)
+    server_key = models.UUIDField(_('server Key'), blank=True, null=True)
 
     def __str__(self):
         return self.username
