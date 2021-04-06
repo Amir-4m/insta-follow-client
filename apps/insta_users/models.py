@@ -18,7 +18,7 @@ class InstaUser(models.Model):
     username = models.CharField(_("username"), max_length=128)
     password = models.CharField(_("password"), max_length=128)
     user_id = models.BigIntegerField(_("user ID"), blank=True, null=True)
-    session = models.TextField(_("session"), blank=True)
+    session = models.JSONField(_("session"), blank=True, null=True)
     server_key = models.UUIDField(_('server Key'), blank=True, null=True)
     status = models.CharField(_("Status"), choices=STATUS, default=STATUS_ACTIVE, max_length=100)
 
