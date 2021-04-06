@@ -66,7 +66,8 @@ def get_insta_follow_order_by_action(instauser, action):
     )
     # TODO needs to fill this field `server_key` here ??
     if not instauser.server_key:
-        logger.warning(f'[insta user has no server key]-[skipping this action]')
+        logger.warning(f'[insta user has no server key]-[insta user id: {instauser.id}]-[params: {params}]'
+                       f'-[skipping this action...]')
         return
 
     # getting orders from api
