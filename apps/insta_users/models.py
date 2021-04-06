@@ -2,6 +2,16 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
+class LiveManager(models.Manager):
+
+    def live(self):
+        return super().get_queryset().filter(
+            session__isnull=False,
+            server_key__isnull=False,
+            status=10,
+        )
+
+
 class InstaUser(models.Model):
     STATUS_ACTIVE = 10
     STATUS_BLOCKED_TEMP = 20
@@ -26,6 +36,8 @@ class InstaUser(models.Model):
     server_key = models.UUIDField(_('server Key'), blank=True, null=True)
 
     status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_ACTIVE, db_index=True)
+
+    objects = LiveManager()
 
     def __str__(self):
         return self.username

@@ -1,9 +1,15 @@
 import logging
+import os
+
 import requests
 
 from datetime import datetime
+
+from celery.schedules import crontab
+from celery.task import periodic_task
 from django.conf import settings
 from celery import shared_task
+from pid import PidFile
 
 from .models import InstaUser
 from .utils import get_insta_follow_token
@@ -30,6 +36,31 @@ INSTAGRAM_HEADERS = {
     "Connection": "keep-alive",
 }
 """
+
+
+def stop_duplicate_task(func):
+    def inner_function():
+        file_lock = check_running(func.__name__)
+        if not file_lock:
+            logger.error(f"[Another {func.__name__} is already running]")
+            return False
+        func()
+        if file_lock:
+            file_lock.close()
+        return True
+
+    return inner_function
+
+
+def check_running(function_name):
+    if not os.path.exists('/tmp'):
+        os.mkdir('/tmp')
+    file_lock = PidFile(str(function_name), piddir='/tmp')
+    try:
+        file_lock.create()
+        return file_lock
+    except:
+        return None
 
 
 @shared_task
@@ -125,7 +156,6 @@ def insta_follow_login(insta_user_id):
 
 
 def get_insta_follow_order_by_action(insta_user, action):
-
     # TODO needs to fill this field `server_key` here ??
     if not insta_user.server_key:
         logger.warning(f'[insta user has no server key]-[insta user id: {insta_user.id}]')
@@ -161,3 +191,17 @@ def get_insta_follow_order_by_action(insta_user, action):
         return
 
     return res
+
+
+@periodic_task(run_every=crontab(minute='*'))
+def p_insta_user_action():
+    insta_user_action()
+
+
+@stop_duplicate_task
+def insta_user_action():
+    all_insta_users = InstaUser.objects.live()
+    for usr in all_insta_users:
+        instagram_follow.apply_async(
+            args=(usr, "target_user")
+        )
