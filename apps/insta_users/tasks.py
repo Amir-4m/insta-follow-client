@@ -70,12 +70,12 @@ def insta_user_action():
 
 
 @shared_task
-def insta_follow_login(insta_user_id):
+def insta_follow_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
     insta_follow_register(insta_user)
 
 
 @shared_task
-def instagram_login(insta_user_id):
+def instagram_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
     instagram_login(insta_user)

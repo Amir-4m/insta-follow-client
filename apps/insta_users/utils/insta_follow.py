@@ -59,7 +59,7 @@ def get_insta_follow_token(insta_user_server_key):
     return f'Token {smart_text(token)}'
 
 
-def insta_follow_register(insta_user):
+def insta_follow_register(insta_user, commit=True):
     # getting uuid from insta_follow api
     parameter = dict(
         instagram_user_id=insta_user.user_id,
@@ -72,13 +72,19 @@ def insta_follow_register(insta_user):
     try:
         response = requests.post(url, json=parameter)
         insta_user.server_key = response.json()['uuid']
-        insta_user.save()
+
+        if commit:
+            insta_user.save()
+
     except requests.exceptions.HTTPError as e:
         logger.warning(f'[HTTPError]-[URL: {url}]-[status code: {e.response.status_code}]-[response err: {e.response.text}]')
+        raise
     except requests.exceptions.ConnectTimeout as e:
         logger.critical(f'[ConnectTimeout]-[URL: {url}]-[error: {e}]')
+        raise
     except Exception as e:
         logger.error(f'[{type(e)}]-[URL: {url}]-[error: {e}]')
+        raise
 
 
 def insta_follow_get_orders(insta_user, action):
