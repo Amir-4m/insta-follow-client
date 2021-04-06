@@ -88,7 +88,7 @@ def insta_follow_register(insta_user, commit=True):
 
 
 def insta_follow_get_orders(insta_user, action):
-    params = dict(limit=5)
+    params = dict(limit=settings.INSTAFOLLOW_ORDER_LIMIT)
     url = f'{INSTA_FOLLOW_ORDERS_URL}{action}/'
 
     logger.debug(f"[getting insta_follow orders]-[insta user id: {insta_user.id}]-[params: {params}]")

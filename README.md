@@ -6,4 +6,5 @@ DEVEL = False
 DEBUG = False
 
 INSTAFOLLOW_BASE_URL = https://instaflw.yourblueapi.com
+INSTAFOLLOW_ORDER_LIMIT
 ```
