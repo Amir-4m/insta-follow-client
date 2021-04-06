@@ -37,7 +37,7 @@ def instagram_login(insta_user_id):
     try:
         insta_user = InstaUser.objects.get(id=insta_user_id, session='')
     except InstaUser.DoesNotExist as e:
-        logger.warning(f'[getting instafollow uuid failed]-[instauser id: {insta_user_id}]-[exc: {e}]')
+        logger.warning(f'[getting insta_follow uuid failed]-[insta_user id: {insta_user_id}]-[exc: {e}]')
         return
 
     session = requests.Session()
@@ -92,7 +92,7 @@ def insta_follow_login(insta_user_id):
     try:
         insta_user = InstaUser.objects.get(id=insta_user_id)
     except InstaUser.DoesNotExist as e:
-        logger.warning(f'[getting instafollow uuid failed]-[instauser id: {insta_user_id}]-[exc: {e}]')
+        logger.warning(f'[getting insta_follow uuid failed]-[insta_user id: {insta_user_id}]-[exc: {e}]')
         return
 
     # getting uuid from insta_follow api
@@ -138,7 +138,7 @@ def get_insta_follow_order_by_action(insta_user, action):
     url = INSTA_FOLLOW_ORDERS_URL
 
     logger.debug(
-        f"[getting instafollow orders]-[URL: {url}]-[insta user id: {insta_user.id}]-[params: {params}]"
+        f"[getting insta_follow orders]-[URL: {url}]-[insta user id: {insta_user.id}]-[params: {params}]"
     )
 
     # getting orders from api
