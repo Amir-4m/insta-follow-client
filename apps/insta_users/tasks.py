@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
 INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/orders/'
+INSTA_FOLLOW_INQUIRIES = f'{settings.INSTAFOLLOW_BASE_URL}/instagram/inquiries/done/'
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
@@ -82,8 +83,11 @@ def instagram_follow(insta_user, target_user):
     try:
         session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
         logger.info(f"[follow succeeded] - [target_user: {target_user}] - [insta_user: {insta_user.username}]")
+        return True
     except Exception as e:
-        logger.info(f"[follow failed] - [target_user: {target_user}] - [insta_user: {insta_user.username}] - [error: {e}]")
+        logger.info(
+            f"[follow failed] - [target_user: {target_user}] - [insta_user: {insta_user.username}] - [error: {e}]")
+        return False
 
 
 @shared_task
@@ -99,7 +103,7 @@ def insta_follow_login(insta_user_id):
     parameter = dict(
         instagram_user_id=insta_user.user_id,
         instagram_username=insta_user.username,
-        session_id=insta_user.session
+        session_id=insta_user.session['sessionid']
     )
     url = INSTA_FOLLOW_LOGIN_URL
     logger.debug(f"[calling api]-[URL: {url}]-[data: {parameter}]")
@@ -131,11 +135,8 @@ def get_insta_follow_order_by_action(insta_user, action):
         logger.warning(f'[insta user has no server key]-[insta user id: {insta_user.id}]')
         return
 
-    params = dict(
-        page_size=5,
-        action=action
-    )
-    url = INSTA_FOLLOW_ORDERS_URL
+    params = dict(limit=5)
+    url = f'{INSTA_FOLLOW_ORDERS_URL}{action}/'
 
     logger.debug(
         f"[getting insta_follow orders]-[URL: {url}]-[insta user id: {insta_user.id}]-[params: {params}]"
@@ -161,3 +162,34 @@ def get_insta_follow_order_by_action(insta_user, action):
         return
 
     return res
+
+
+def do_follow(insta_user, order):
+    if not insta_user.server_key:
+        logger.warning(f'[insta user has no server key]-[insta user id: {insta_user.id}]')
+        return
+
+    if instagram_follow(insta_user, order['target_no']):
+        url = INSTA_FOLLOW_INQUIRIES
+        data = dict(order_id=order['id'])
+
+        try:
+            headers = dict(Authorization=get_insta_follow_token(insta_user.server_key))
+            response = requests.post(url, json=data, headers=headers)
+            res = response.json()
+
+        except requests.exceptions.HTTPError as e:
+            logger.warning(
+                f'[HTTPError]-[URL: {url}]-[status code: {e.response.status_code}]'
+                f'-[response err: {e.response.text}]-[error: {e}]'
+            )
+            return
+        except requests.exceptions.ConnectTimeout as e:
+            logger.critical(f'[ConnectTimeout]-[URL: {url}]-[error: {e}]')
+            return
+        except Exception as e:
+            logger.error(f'[{type(e)}]-[URL: {url}]-[error: {e}]')
+            return
+
+
+
