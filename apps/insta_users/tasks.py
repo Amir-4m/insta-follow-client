@@ -9,7 +9,6 @@ from .models import InstaUser
 
 logger = logging.getLogger(__name__)
 
-
 INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
@@ -53,7 +52,7 @@ def instagram_login(insta_user_id):
         login_resp = session.post(INSTAGRAM_LOGIN_URL, data=login_data, allow_redirects=True)
         session.headers.update({'X-CSRFToken': resp.cookies['csrftoken']})
         if login_resp.json()['authenticated']:
-            insta_user.session = str(session.cookies)
+            insta_user.session = session.cookies.get_dict()
             insta_user.user_id = session.cookies['ds_user_id']
             insta_user.save()
             logger.info(f"log in succeeded for {insta_user.username}")
@@ -97,3 +96,30 @@ def insta_follow_login(insta_user_id):
         return
 
     return insta_user.server_key
+
+
+ @shared_task
+def instagram_like(pk, media_id):
+    try:
+        usr = InstaUser.objects.get(id=pk)
+        usr_session = requests.session()
+        usr_session.headers.update({'X-CSRFToken': usr.session['csrftoken']})
+        usr_session.cookies.update(usr.session)
+        usr_session.post(f"https://www.instagram.com/web/likes/{media_id}/like/")
+        logger.info(f"post liked succeeded with the media_id of: [{media_id} and username of {usr.username}]")
+    except Exception as e:
+        logger.error(f"post liked succeeded with the media_id of: [{media_id} and username of {usr.username}] -- error: [{str(e)}")
+
+
+@shared_task
+def instagram_follow(pk, target_user):
+    try:
+        usr = InstaUser.objects.get(id=pk)
+        usr_session = requests.session()
+        usr_session.headers.update({'X-CSRFToken': usr.session['csrftoken']})
+        usr_session.cookies.update(usr.session)
+        usr_session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
+        logger.info(f"follow succeeded with the target_user of: [{target_user}]")
+    except Exception as e:
+        logger.error(f"follow failed with the target_user of: [{target_user}] -- error: [{str(e)}")
+
