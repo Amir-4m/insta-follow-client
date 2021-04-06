@@ -116,6 +116,22 @@ def instagram_follow(insta_user, target_user):
     except Exception as e:
         logger.info(f"[follow failed] - [target_user: {target_user}] - [insta_user: {insta_user.username}] - [error: {e}]")
 
+@shared_task
+def instagram_comment(insta_user, media_id, comment):
+    session = requests.session()
+    session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
+    session.cookies.update(insta_user.session)
+    data = {
+        "comment_text": comment,
+        "replied_to_comment_id": ""
+    }
+
+    try:
+        session.post(f"https://www.instagram.com/web/comments/{media_id}/add/", data=data)
+        logger.info(f"[comment succeeded] - [media_id: {media_id}] - [insta_user: {insta_user.username}]")
+    except Exception as e:
+        logger.info(f"[comment failed] - [target_user: {media_id}] - [insta_user: {insta_user.username}] - [error: {e}]")
+
 
 @shared_task
 def insta_follow_login(insta_user_id):
