@@ -6,10 +6,12 @@ from django.conf import settings
 from celery import shared_task
 
 from .models import InstaUser
+from .utils import get_insta_follow_token
 
 logger = logging.getLogger(__name__)
 
 INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
+INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/orders/'
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
@@ -60,6 +62,30 @@ def instagram_login(insta_user_id):
         logger.error(f"log in failed for {insta_user.username} - [error: {e}]")
 
 
+def instagram_like(insta_user, media_id):
+    session = requests.session()
+    session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
+    session.cookies.update(insta_user.session)
+
+    try:
+        session.post(f"https://www.instagram.com/web/likes/{media_id}/like/")
+        logger.info(f"[like succeeded] - [media_id: {media_id}] - [insta_user: {insta_user.username}]")
+    except Exception as e:
+        logger.info(f"[like failed] - [media_id: {media_id}] - [insta_user: {insta_user.username}] - [error: {e}]")
+
+
+def instagram_follow(insta_user, target_user):
+    session = requests.session()
+    session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
+    session.cookies.update(insta_user.session)
+
+    try:
+        session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
+        logger.info(f"[follow succeeded] - [target_user: {target_user}] - [insta_user: {insta_user.username}]")
+    except Exception as e:
+        logger.info(f"[follow failed] - [target_user: {target_user}] - [insta_user: {insta_user.username}] - [error: {e}]")
+
+
 @shared_task
 def insta_follow_login(insta_user_id):
     # getting InstaUser object
@@ -69,7 +95,7 @@ def insta_follow_login(insta_user_id):
         logger.warning(f'[getting instafollow uuid failed]-[instauser id: {insta_user_id}]-[exc: {e}]')
         return
 
-    # getting uuid from instafollow api
+    # getting uuid from insta_follow api
     parameter = dict(
         instagram_user_id=insta_user.user_id,
         instagram_username=insta_user.username,
@@ -84,42 +110,54 @@ def insta_follow_login(insta_user_id):
         insta_user.save()
     except requests.exceptions.HTTPError as e:
         logger.warning(
-            f'[making request failed]-[URL: {url}]-[status code: {e.response.status_code}]'
-            f'-[response err: {e.response.text}]-[exc: {e}]'
+            f'[HTTPError]-[URL: {url}]-[status code: {e.response.status_code}]'
+            f'-[response err: {e.response.text}]-[error: {e}]'
         )
         return
     except requests.exceptions.ConnectTimeout as e:
-        logger.critical(f'[request failed]-[URL: {url}]-[exc: {e}]')
+        logger.critical(f'[ConnectTimeout]-[URL: {url}]-[error: {e}]')
         return
     except Exception as e:
-        logger.error(f'[request failed]-[URL: {url}]-[exc: {e}]')
+        logger.error(f'[{type(e)}]-[URL: {url}]-[error: {e}]')
         return
 
     return insta_user.server_key
 
 
- @shared_task
-def instagram_like(pk, media_id):
+def get_insta_follow_order_by_action(insta_user, action):
+
+    # TODO needs to fill this field `server_key` here ??
+    if not insta_user.server_key:
+        logger.warning(f'[insta user has no server key]-[insta user id: {insta_user.id}]')
+        return
+
+    params = dict(
+        page_size=5,
+        action=action
+    )
+    url = INSTA_FOLLOW_ORDERS_URL
+
+    logger.debug(
+        f"[getting instafollow orders]-[URL: {url}]-[insta user id: {insta_user.id}]-[params: {params}]"
+    )
+
+    # getting orders from api
     try:
-        usr = InstaUser.objects.get(id=pk)
-        usr_session = requests.session()
-        usr_session.headers.update({'X-CSRFToken': usr.session['csrftoken']})
-        usr_session.cookies.update(usr.session)
-        usr_session.post(f"https://www.instagram.com/web/likes/{media_id}/like/")
-        logger.info(f"post liked succeeded with the media_id of: [{media_id} and username of {usr.username}]")
+        headers = dict(Authorization=get_insta_follow_token(insta_user.server_key))
+        response = requests.get(url, params=params, headers=headers)
+        res = response.json()
+
+    except requests.exceptions.HTTPError as e:
+        logger.warning(
+            f'[HTTPError]-[URL: {url}]-[status code: {e.response.status_code}]'
+            f'-[response err: {e.response.text}]-[error: {e}]'
+        )
+        return
+    except requests.exceptions.ConnectTimeout as e:
+        logger.critical(f'[ConnectTimeout]-[URL: {url}]-[error: {e}]')
+        return
     except Exception as e:
-        logger.error(f"post liked succeeded with the media_id of: [{media_id} and username of {usr.username}] -- error: [{str(e)}")
+        logger.error(f'[{type(e)}]-[URL: {url}]-[error: {e}]')
+        return
 
-
-@shared_task
-def instagram_follow(pk, target_user):
-    try:
-        usr = InstaUser.objects.get(id=pk)
-        usr_session = requests.session()
-        usr_session.headers.update({'X-CSRFToken': usr.session['csrftoken']})
-        usr_session.cookies.update(usr.session)
-        usr_session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
-        logger.info(f"follow succeeded with the target_user of: [{target_user}]")
-    except Exception as e:
-        logger.error(f"follow failed with the target_user of: [{target_user}] -- error: [{str(e)}")
-
+    return res
