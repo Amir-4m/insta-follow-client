@@ -7,11 +7,12 @@ from apps.insta_users.utils.insta_follow import get_insta_follow_uuid
 
 @admin.register(InstaUser)
 class InstaUserAdmin(admin.ModelAdmin):
-    list_display = ("username", "user_id")
+    list_display = ("username", "user_id", "status", "proxy")
     search_fields = ("username", "user_id")
+    raw_id_fields = ['proxy']
 
     def save_model(self, request, obj, form, change):
-        if obj.stats == InstaUser.STATUS_ACTIVE:
+        if obj.status == InstaUser.STATUS_ACTIVE:
             if obj.session is None:
                 try:
                     instagram_login(obj, commit=False)
