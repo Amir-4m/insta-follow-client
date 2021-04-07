@@ -45,7 +45,7 @@ def instagram_like(insta_user, media_id):
     session.cookies.update(insta_user.session)
 
     session.post(f"https://www.instagram.com/web/likes/{media_id}/like/")
-    logger.debug(f"[like succeeded] - [media_id: {media_id}] - [insta_user: {insta_user.username}]")
+    logger.debug(f"[like succeeded]-[insta_user: {insta_user.username}]-[media_id: {media_id}]")
 
 
 def instagram_follow(insta_user, target_user):
@@ -54,7 +54,7 @@ def instagram_follow(insta_user, target_user):
     session.cookies.update(insta_user.session)
 
     session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
-    logger.debug(f"[follow succeeded] - [target_user: {target_user}] - [insta_user: {insta_user.username}]")
+    logger.debug(f"[follow succeeded]-[insta_user: {insta_user.username}]-[target_user: {target_user}]")
 
 
 def instagram_comment(insta_user, media_id, comment):
@@ -67,4 +67,4 @@ def instagram_comment(insta_user, media_id, comment):
     }
 
     session.post(f"https://www.instagram.com/web/comments/{media_id}/add/", data=data)
-    logger.debug(f"[comment succeeded] - [media_id: {media_id}] - [insta_user: {insta_user.username}]")
+    logger.debug(f"[comment succeeded]-[insta_user: {insta_user.username}]-[media_id: {media_id}]")

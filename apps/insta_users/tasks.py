@@ -6,7 +6,7 @@ from celery.task import periodic_task
 from celery import shared_task
 from pid import PidFile
 
-from .models import InstaUser
+from .models import InstaUser, InstaAction
 from .utils.insta_follow import insta_follow_register, insta_follow_get_orders, insta_follow_order_done
 from .utils.instagram import instagram_login, instagram_follow
 
@@ -33,23 +33,22 @@ def check_running(function_name):
     if not os.path.exists('/tmp'):
         os.mkdir('/tmp')
     file_lock = PidFile(str(function_name), piddir='/tmp')
-    try:
-        file_lock.create()
-        return file_lock
-    except:
-        return None
+    file_lock.create()
+    return file_lock
 
 
 def stop_duplicate_task(func):
     def inner_function():
-        file_lock = check_running(func.__name__)
-        if not file_lock:
+        try:
+            file_lock = check_running(func.__name__)
+        except:
             logger.error(f"[Another {func.__name__} is already running]")
-            return False
+            return
+
         func()
+
         if file_lock:
             file_lock.close()
-        return True
 
     return inner_function
 
@@ -61,12 +60,23 @@ def p_insta_user_action():
 
 @stop_duplicate_task
 def insta_user_action():
-    insta_users = InstaUser.objects.live()
-    for insta_user in insta_users:
-        orders = insta_follow_get_orders(insta_user, 'follow')
-        for order in orders:
+    insta_user_ids = InstaUser.objects.live().values_list('id', flat=True)
+    for insta_user_id in insta_user_ids:
+        action = InstaAction.ACTION_FOLLOW
+        orders = insta_follow_get_orders(insta_user_id, action)
+        do_orders.delay(insta_user_id, orders)
+
+
+@shared_task
+def do_orders(insta_user_id, orders):
+    insta_user = InstaUser.objects.get(id=insta_user_id)
+    for order in orders:
+        try:
             instagram_follow(insta_user, order)
-            insta_follow_order_done(insta_user, order['id'])
+        except Exception as e:
+            logger.error(f'[Could not perform instagram action]-[insta_user: {insta_user_id.username}]-[order: {order}]-[err: {type(e)}, {e}]')
+        else:
+            insta_follow_order_done(insta_user_id, order['id'])
 
 
 @shared_task

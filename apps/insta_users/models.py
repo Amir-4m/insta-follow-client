@@ -2,6 +2,18 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
+class InstaAction(object):
+    ACTION_LIKE = 'like'
+    ACTION_FOLLOW = 'follow'
+    ACTION_COMMENT = 'comment'
+
+    ACTION_CHOICES = (
+        (ACTION_LIKE, _('Like')),
+        (ACTION_FOLLOW, _('Follow')),
+        (ACTION_COMMENT, _('Comment')),
+    )
+
+
 class LiveManager(models.Manager):
 
     def live(self):
@@ -43,15 +55,3 @@ class InstaUser(models.Model):
 
     def __str__(self):
         return self.username
-
-
-class InstaAction(object):
-    ACTION_LIKE = 'like'
-    ACTION_FOLLOW = 'follow'
-    ACTION_COMMENT = 'comment'
-
-    ACTION_CHOICES = [
-        (ACTION_LIKE, _('Like')),
-        (ACTION_FOLLOW, _('Follow')),
-        (ACTION_COMMENT, _('Comment')),
-    ]
