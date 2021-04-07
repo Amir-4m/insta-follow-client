@@ -201,3 +201,4 @@ LOGGING = {
 
 # Custom Values
 INSTAFOLLOW_BASE_URL = config('INSTAFOLLOW_BASE_URL', cast=str)
+INSTAFOLLOW_ORDER_LIMIT = config('INSTAFOLLOW_ORDER_LIMIT', cast=int, default=5)
