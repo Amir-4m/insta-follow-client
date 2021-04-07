@@ -9,7 +9,7 @@ INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 
 
-def instagram_login(insta_user):
+def instagram_login(insta_user, commit=True):
     session = requests.Session()
     session.headers = {
         'Referer': INSTAGRAM_BASE_URL,
@@ -32,10 +32,12 @@ def instagram_login(insta_user):
     if is_auth:
         insta_user.session = session.cookies.get_dict()
         insta_user.user_id = session.cookies['ds_user_id']
-        logger.info(f"log in succeeded for {insta_user.username}")
+        logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
     else:
         insta_user.username = None
         insta_user.status = insta_user.STATUS_WRONG
+
+    if commit:
         insta_user.save()
 
 

@@ -53,14 +53,13 @@ class CryptoService:
         return self.__unpad(cipher.decrypt(enc).decode())
 
 
-def get_insta_follow_token(insta_user_server_key):
+def generate_insta_follow_token(insta_user_server_key):
     dt = datetime.utcnow()
     token = CryptoService(dt.strftime("%d%m%y%H") + dt.strftime("%d%m%y%H")).encrypt(str(insta_user_server_key))
     return f'Token {smart_text(token)}'
 
 
-def insta_follow_register(insta_user):
-    # getting uuid from insta_follow api
+def get_insta_follow_uuid(insta_user):
     params = dict(
         instagram_user_id=insta_user.user_id,
         instagram_username=insta_user.username,
@@ -71,8 +70,7 @@ def insta_follow_register(insta_user):
 
     try:
         response = requests.post(url, json=params)
-        insta_user.server_key = response.json()['uuid']
-        insta_user.save()
+        return response.json()['uuid']
     except requests.exceptions.HTTPError as e:
         logger.warning(f'[insta_follow register]-[HTTPError]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
     except requests.exceptions.ConnectTimeout as e:
@@ -82,15 +80,14 @@ def insta_follow_register(insta_user):
 
 
 def insta_follow_get_orders(insta_user, action):
-    params = dict(limit=5)
+    params = dict(limit=settings.INSTAFOLLOW_ORDER_LIMIT)
     url = f'{INSTA_FOLLOW_ORDERS_URL}{action}/'
 
     logger.debug(f"[insta_follow orders]-[insta user id: {insta_user.id}]-[params: {params}]")
 
     res = []
-    # getting orders from api
     try:
-        headers = dict(Authorization=get_insta_follow_token(insta_user.server_key))
+        headers = dict(Authorization=generate_insta_follow_token(insta_user.server_key))
         response = requests.get(url, params=params, headers=headers)
         res = response.json()
     except requests.exceptions.HTTPError as e:
@@ -107,7 +104,7 @@ def insta_follow_order_done(insta_user, order_id):
     # if instagram_follow(insta_user, order['target_no']):
     url = INSTA_FOLLOW_INQUIRIES
     try:
-        headers = dict(Authorization=get_insta_follow_token(insta_user.server_key))
+        headers = dict(Authorization=generate_insta_follow_token(insta_user.server_key))
         requests.post(url, json={'order_id': order_id}, headers=headers)
     except requests.exceptions.HTTPError as e:
         logger.warning(f'[insta_follow order done]-[HTTPError]-[status code: {e.response.status_code}]-[err: {e.response.text}]')

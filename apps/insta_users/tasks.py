@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 from celery.schedules import crontab
 from celery.task import periodic_task
@@ -7,7 +8,7 @@ from celery import shared_task
 from pid import PidFile
 
 from .models import InstaUser, InstaAction
-from .utils.insta_follow import insta_follow_register, insta_follow_get_orders, insta_follow_order_done
+from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
 from .utils.instagram import instagram_login, instagram_follow
 
 logger = logging.getLogger(__name__)
@@ -72,20 +73,21 @@ def do_orders(insta_user_id, orders):
     insta_user = InstaUser.objects.get(id=insta_user_id)
     for order in orders:
         try:
-            instagram_follow(insta_user, order)
+            instagram_follow(insta_user, order['entity_id'])
         except Exception as e:
             logger.error(f'[Could not perform instagram action]-[insta_user: {insta_user_id.username}]-[order: {order}]-[err: {type(e)}, {e}]')
         else:
             insta_follow_order_done(insta_user_id, order['id'])
+        time.sleep(5)
 
 
 @shared_task
-def insta_follow_login(insta_user_id):
+def insta_follow_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
-    insta_follow_register(insta_user)
+    get_insta_follow_uuid(insta_user)
 
 
 @shared_task
-def instagram_login(insta_user_id):
+def instagram_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
     instagram_login(insta_user)
