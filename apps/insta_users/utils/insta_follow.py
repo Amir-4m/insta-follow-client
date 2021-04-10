@@ -12,9 +12,9 @@ from Crypto import Random
 
 logger = logging.getLogger(__file__)
 
-INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
-INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/orders/'
-INSTA_FOLLOW_INQUIRIES = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/inquiries/done/'
+INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
+INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/orders/'
+INSTA_FOLLOW_INQUIRIES = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/inquiries/done/'
 
 
 class CryptoService:
@@ -73,15 +73,15 @@ def get_insta_follow_uuid(insta_user):
         _r.raise_for_status()
         return _r.json()['uuid']
     except requests.exceptions.HTTPError as e:
-        logger.warning(f'[insta_follow register]-[HTTPError]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
+        logger.warning(f'[insta_follow register]-[HTTPError]-[insta_user: {insta_user.username}]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
     except requests.exceptions.ConnectTimeout as e:
         logger.critical(f'[insta_follow register]-[ConnectTimeout]-[err: {e}]')
     except Exception as e:
-        logger.error(f'[insta_follow register]-[{type(e)}]-[URL: {url}]-[err: {e}]')
+        logger.error(f'[insta_follow register]-[{type(e)}]-[insta_user: {insta_user.username}]-[URL: {url}]-[err: {e}]')
 
 
 def insta_follow_get_orders(insta_user, action):
-    params = dict(limit=settings.INSTAFOLLOW_ORDER_LIMIT)
+    params = dict(limit=settings.INSTA_FOLLOW_ORDER_LIMIT)
     url = f'{INSTA_FOLLOW_ORDERS_URL}{action}/'
 
     logger.debug(f"[insta_follow orders]-[insta user id: {insta_user.id}]-[params: {params}]")
@@ -93,25 +93,27 @@ def insta_follow_get_orders(insta_user, action):
         _r.raise_for_status()
         res = _r.json()
     except requests.exceptions.HTTPError as e:
-        logger.warning(f'[insta_follow orders]-[HTTPError]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
+        logger.warning(f'[insta_follow orders]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {action}]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
     except requests.exceptions.ConnectTimeout as e:
         logger.critical(f'[insta_follow orders]-[ConnectTimeout]-[err: {e}]')
     except Exception as e:
-        logger.error(f'[insta_follow orders]-[{type(e)}]-[URL: {url}]-[err: {e}]')
+        logger.error(f'[insta_follow orders]-[{type(e)}]-[insta_user: {insta_user.username}]-[action: {action}]-[URL: {url}]-[err: {e}]')
 
     return res
 
 
 def insta_follow_order_done(insta_user, order_id):
-    # if instagram_follow(insta_user, order['target_no']):
+
+    logger.debug(f"[insta_follow order done]-[insta user id: {insta_user.username}]-[order: {order_id}]")
+
     url = INSTA_FOLLOW_INQUIRIES
     try:
         headers = dict(Authorization=generate_insta_follow_token(insta_user.server_key))
         _r = requests.post(url, json={'order': order_id}, headers=headers)
         _r.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        logger.warning(f'[insta_follow order done]-[HTTPError]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
+        logger.warning(f'[insta_follow order done]-[HTTPError]-[insta_user: {insta_user.username}]-[order: {order_id}]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
     except requests.exceptions.ConnectTimeout as e:
         logger.critical(f'[insta_follow order done]-[ConnectTimeout]-[err: {e}]')
     except Exception as e:
-        logger.error(f'[insta_follow order done]-[{type(e)}]-[URL: {url}]-[err: {e}]')
+        logger.error(f'[insta_follow order done]-[{type(e)}]-[insta_user: {insta_user.username}]-[order: {order_id}]-[URL: {url}]-[err: {e}]')

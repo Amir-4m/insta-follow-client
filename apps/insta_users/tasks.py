@@ -65,6 +65,7 @@ def insta_user_action():
     for insta_user in insta_users:
         action = InstaAction.ACTION_FOLLOW
         orders = insta_follow_get_orders(insta_user, action)
+        logger.debug(f'retrieved {len(orders)} - {[o["id"] for o in orders]} - for user: {insta_user.username}')
         do_orders.delay(insta_user.id, orders)
 
 
@@ -75,7 +76,7 @@ def do_orders(insta_user_id, orders):
         try:
             instagram_follow(insta_user, order['entity_id'])
         except Exception as e:
-            logger.error(f'[Could not perform instagram action]-[insta_user: {insta_user_id.username}]-[order: {order}]-[err: {type(e)}, {e}]')
+            logger.error(f'[Could not perform instagram action]-[insta_user: {insta_user.username}]-[order: {order}]-[err: {type(e)}, {e}]')
         else:
             insta_follow_order_done(insta_user, order['id'])
         time.sleep(5)

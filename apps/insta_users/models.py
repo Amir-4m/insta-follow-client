@@ -53,6 +53,9 @@ class InstaUser(models.Model):
 
     objects = LiveManager()
 
+    class Meta:
+        db_table = 'insta_users'
+
     def __str__(self):
         return self.username
 

@@ -23,13 +23,17 @@ class Proxy(models.Model):
 
     is_enable = models.BooleanField(_('is enable'), default=True)
 
+    class Meta:
+        db_table = 'proxies'
+        verbose_name_plural = _('proxies')
+
     def __str__(self):
         return f'{self.id}-{self.server}'
 
-    @staticmethod
-    def get_low_traffic_proxy():
+    @classmethod
+    def get_proxy(cls):
         try:
-            return Proxy.objects.filter(
+            return cls.objects.filter(
                 is_enable=True
             ).annotate(
                 used_number=Count('insta_users')

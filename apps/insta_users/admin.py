@@ -1,8 +1,9 @@
 from django.contrib import admin, messages
 
-from apps.insta_users.models import InstaUser
-from apps.insta_users.utils.instagram import instagram_login
-from apps.insta_users.utils.insta_follow import get_insta_follow_uuid
+from .models import InstaUser
+from ..proxies.models import Proxy
+from .utils.instagram import instagram_login
+from .utils.insta_follow import get_insta_follow_uuid
 
 
 @admin.register(InstaUser)
@@ -22,5 +23,7 @@ class InstaUserAdmin(admin.ModelAdmin):
             if obj.session and obj.server_key is None:
                 obj.server_key = get_insta_follow_uuid(obj)
 
-        super().save_model(request, obj, form, change)
+            if obj.proxy is None:
+                obj.proxy_id = Proxy.get_proxy()
 
+        super().save_model(request, obj, form, change)

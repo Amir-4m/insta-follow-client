@@ -46,6 +46,7 @@ def instagram_login(insta_user, commit=True):
 def get_action_session(insta_user):
     session = requests.session()
     session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
+    session.headers.update({'X-Instagram-AJAX': '7e64493c83ae'})
     session.cookies.update(insta_user.session)
     insta_user.set_proxy(session)
 
@@ -62,7 +63,8 @@ def instagram_like(insta_user, media_id):
 def instagram_follow(insta_user, target_user):
     session = get_action_session(insta_user)
 
-    session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
+    _s = session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
+    _s.raise_for_status()
     logger.debug(f"[follow succeeded]-[insta_user: {insta_user.username}]-[target_user: {target_user}]")
 
 

@@ -60,6 +60,7 @@ MIDDLEWARE = [
 WSGI_APPLICATION = 'conf.wsgi.application'
 ROOT_URLCONF = 'conf.urls'
 APPEND_SLASH = False
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 TEMPLATES = [
     {
@@ -195,10 +196,14 @@ LOGGING = {
         'apps': {
             'handlers': ['file', 'console'],
             'level': 'DEBUG',
+        },
+        'apps.insta_users.utils': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
         }
     },
 }
 
 # Custom Values
-INSTAFOLLOW_BASE_URL = config('INSTAFOLLOW_BASE_URL')
-INSTAFOLLOW_ORDER_LIMIT = config('INSTAFOLLOW_ORDER_LIMIT', cast=int, default=5)
+INSTA_FOLLOW_BASE_URL = config('INSTA_FOLLOW_BASE_URL')
+INSTA_FOLLOW_ORDER_LIMIT = config('INSTA_FOLLOW_ORDER_LIMIT', cast=int, default=5)
