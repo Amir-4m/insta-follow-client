@@ -14,8 +14,6 @@ def instagram_login(insta_user, commit=True):
 
     if insta_user.proxy_id:
         proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.server}:{insta_user.proxy.port}'}
-        print(proxies)
-
         session.proxies.update(proxies)
 
     session.headers = {
