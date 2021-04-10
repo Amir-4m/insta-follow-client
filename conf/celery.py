@@ -3,10 +3,9 @@ import os
 from celery import Celery
 
 # set the default Django settings module for the 'celery' program.
-from conf import settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf.settings')
 
-app = Celery('conf')
+app = Celery('insta_client')
 
 # Using a string here means the worker don't have to serialize
 # the configuration object to child processes.

@@ -2,6 +2,8 @@ import logging
 import requests
 
 from datetime import datetime
+
+from django.conf import settings
 # from apps.insta_users.models import InstaAction
 
 logger = logging.getLogger(__name__)
@@ -73,6 +75,7 @@ def do_instagram_action(insta_user, order):
             is_spam = _s.json().get('spam', False)
             if is_spam:
                 insta_user.status = insta_user.STATUS_BLOCKED
+                insta_user.block_count = min(insta_user.block_count + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
                 insta_user.save()
         raise
 

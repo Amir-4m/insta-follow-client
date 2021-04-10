@@ -214,4 +214,5 @@ INSTA_FOLLOW_SETTINGS = {
     "delay_comment": 10,
     "lock_time": 30,
     "pre_lock_time": 5,
+    "max_lock": 5,
 }
