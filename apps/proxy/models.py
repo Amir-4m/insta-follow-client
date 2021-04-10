@@ -33,7 +33,7 @@ class Proxy(models.Model):
                 is_enable=True
             ).annotate(
                 used_number=Count('instauser_proxy')
-            ).order_by('used_number').values('used_number', 'id')[:1][0]['id']
+            ).order_by('used_number').values('used_number', 'id')[0]['id']
         except KeyError:
             return None
 
