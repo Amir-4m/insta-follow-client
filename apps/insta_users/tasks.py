@@ -5,6 +5,7 @@ import time
 from celery.schedules import crontab
 from celery.task import periodic_task
 from celery import shared_task
+from django.utils import timezone
 from pid import PidFile
 
 from .models import InstaUser, InstaAction
@@ -12,7 +13,6 @@ from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, 
 from .utils.instagram import instagram_login, do_instagram_action
 
 logger = logging.getLogger(__name__)
-
 
 # TODO: for later use
 """
@@ -95,19 +95,13 @@ def instagram_login_task(insta_user_id):
     instagram_login(insta_user)
 
 
-"""
 @periodic_task(run_every=crontab(minute='*'))
 def check_temporary_blocked_users():
-    temporary_blocked_users = InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED_TEMP)
-    for usr in temporary_blocked_users:
-        if (timezone.now() - usr.updated_time).seconds > settings.USER_DELAY_LOCK_TIMING["pre_lock_like"]*60:
-            usr.status = InstaUser.STATUS_ACTIVE
+    InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED_TEMP,
+                             updated_time__lt=timezone.now() - timezone.timedelta(seconds=300)).update(status=InstaUser.STATUS_ACTIVE)
 
 
 @periodic_task(run_every=crontab(minute='*'))
 def check_blocked_users():
-    temporary_blocked_users = InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED)
-    for usr in temporary_blocked_users:
-        if (timezone.now() - usr.updated_time).seconds > settings.USER_DELAY_LOCK_TIMING["lock_like"]*60:
-            usr.status = InstaUser.STATUS_ACTIVE
-"""
+    InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED,
+                             updated_time__lt=timezone.now() - timezone.timedelta(seconds=1800)).update(status=InstaUser.STATUS_ACTIVE)
