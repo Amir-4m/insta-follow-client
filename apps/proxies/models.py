@@ -4,8 +4,8 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class Proxy(models.Model):
-    PROTOCOL_HTTP = 'http'
-    PROTOCOL_HTTPS = 'https'
+    PROTOCOL_HTTP = 1
+    PROTOCOL_HTTPS = 2
     PROTOCOL_CHOICES = (
         (PROTOCOL_HTTP, _('HTTP')),
         (PROTOCOL_HTTPS, _('HTTPS')),
@@ -40,4 +40,3 @@ class Proxy(models.Model):
             ).order_by('used_number').values('used_number', 'id')[0]['id']
         except KeyError:
             return None
-

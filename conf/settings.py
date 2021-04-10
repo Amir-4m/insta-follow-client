@@ -210,7 +210,7 @@ INSTA_FOLLOW_ORDER_LIMIT = config('INSTA_FOLLOW_ORDER_LIMIT', cast=int, default=
 
 INSTA_FOLLOW_SETTINGS = {
     "delay_like": 3,
-    "delay_follow": 3,
+    "delay_follow": 10,
     "delay_comment": 10,
     "lock_time": 30,
     "pre_lock_time": 5,
