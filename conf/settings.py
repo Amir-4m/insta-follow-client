@@ -34,6 +34,7 @@ SECRET_KEY = config("SECRET_KEY")
 INSTALLED_APPS = [
     # Local
     'apps.insta_users',
+    'apps.proxy',
 
     # Third Parties
     

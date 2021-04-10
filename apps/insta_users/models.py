@@ -42,13 +42,20 @@ class InstaUser(models.Model):
     created_time = models.DateTimeField(_('created time'), auto_now_add=True)
     updated_time = models.DateTimeField(_('updated time'), auto_now=True)
 
+    proxy = models.ForeignKey(
+        'proxy.Proxy',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='instauser_proxy',
+        verbose_name=_('proxy')
+    )
+
     username = models.CharField(_("username"), max_length=64)
     password = models.CharField(_("password"), max_length=128)
     user_id = models.PositiveBigIntegerField(_("user ID"), unique=True, blank=True, null=True)
     session = models.JSONField(_("session"), blank=True, null=True)
 
     server_key = models.UUIDField(_('server Key'), blank=True, null=True)
-
     status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_ACTIVE, db_index=True)
 
     objects = LiveManager()
