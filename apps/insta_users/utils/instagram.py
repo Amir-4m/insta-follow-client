@@ -2,7 +2,7 @@ import logging
 import requests
 
 from datetime import datetime
-from apps.insta_users.models import InstaAction
+# from apps.insta_users.models import InstaAction
 
 logger = logging.getLogger(__name__)
 
@@ -70,11 +70,7 @@ def do_instagram_action(insta_user, order):
             insta_user.save()
 
         elif _s.status_code == 400:
-            try:
-                is_spam = _s.json()['spam']
-            except:
-                is_spam = False
-
+            is_spam = _s.json().get('spam', False)
             if is_spam:
                 insta_user.status = insta_user.STATUS_BLOCKED
                 insta_user.save()

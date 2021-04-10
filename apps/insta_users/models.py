@@ -13,6 +13,12 @@ class InstaAction(object):
         (ACTION_COMMENT, 'comment'),
     )
 
+    @classmethod
+    def get_action_from_key(cls, key):
+        for act in cls.ACTION_CHOICES:
+            if key == act[0]:
+                return act[1]
+
 
 class LiveManager(models.Manager):
 
@@ -48,8 +54,9 @@ class InstaUser(models.Model):
     session = models.JSONField(_("session"), blank=True, null=True)
 
     status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_ACTIVE, db_index=True)
+    block_count = models.PositiveSmallIntegerField(_("block Count"), default=0, editable=False)
+
     server_key = models.UUIDField(_('server Key'), blank=True, null=True, help_text=_('insta follow server key'))
-    # block_count = models.PositiveSmallIntegerField(_("block Count"), default=0)
     proxy = models.ForeignKey('proxies.Proxy', on_delete=models.SET_NULL, null=True, blank=True, related_name='insta_users')
 
     objects = LiveManager()

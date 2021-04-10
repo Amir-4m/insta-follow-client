@@ -2,10 +2,13 @@ import logging
 import os
 import time
 
+from django.utils import timezone
+from django.conf import settings
+
 from celery.schedules import crontab
 from celery.task import periodic_task
 from celery import shared_task
-from django.utils import timezone
+
 from pid import PidFile
 
 from .models import InstaUser, InstaAction
@@ -63,7 +66,7 @@ def p_insta_user_action():
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
-        action = InstaAction.ACTION_CHOICES[1][1]
+        action = InstaAction.get_action_from_key(InstaAction.ACTION_FOLLOW)
         orders = insta_follow_get_orders(insta_user, action)
         logger.debug(f'retrieved {len(orders)} - {[o["id"] for o in orders]} - for user: {insta_user.username}')
         do_orders.delay(insta_user.id, orders)
@@ -80,13 +83,14 @@ def do_orders(insta_user_id, orders):
             break
         else:
             insta_follow_order_done(insta_user, order['id'])
-        time.sleep(5)
+        time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{InstaAction.get_action_from_key(order['action'])}"])
 
 
 @shared_task
 def insta_follow_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
-    get_insta_follow_uuid(insta_user)
+    insta_user.server_key = get_insta_follow_uuid(insta_user)
+    insta_user.save()
 
 
 @shared_task
@@ -95,13 +99,22 @@ def instagram_login_task(insta_user_id):
     instagram_login(insta_user)
 
 
-@periodic_task(run_every=crontab(minute='*'))
-def check_temporary_blocked_users():
-    InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED_TEMP,
-                             updated_time__lt=timezone.now() - timezone.timedelta(seconds=300)).update(status=InstaUser.STATUS_ACTIVE)
+@periodic_task(run_every=crontab(minute='*/5'))
+def reactivate_blocked_users():
+    reactivated = 0
 
+    reactivated += InstaUser.objects.filter(
+        status=InstaUser.STATUS_BLOCKED_TEMP,
+        updated_time__lt=timezone.now() - timezone.timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS['pre_lock_time'])
+    ).update(
+        status=InstaUser.STATUS_ACTIVE
+    )
 
-@periodic_task(run_every=crontab(minute='*'))
-def check_blocked_users():
-    InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED,
-                             updated_time__lt=timezone.now() - timezone.timedelta(seconds=1800)).update(status=InstaUser.STATUS_ACTIVE)
+    reactivated += InstaUser.objects.filter(
+        status=InstaUser.STATUS_BLOCKED,
+        updated_time__lt=timezone.now() - timezone.timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS['lock_time'])
+    ).update(
+        status=InstaUser.STATUS_ACTIVE
+    )
+
+    return reactivated
