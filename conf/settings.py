@@ -156,11 +156,14 @@ LOGGING = {
         'require_debug_true': {
             '()': 'django.utils.log.RequireDebugTrue',
         },
+        'require_devel_true': {
+            '()': 'utils.log.RequireDevelTrue',
+        },
     },
     'handlers': {
         'console': {
             'level': 'DEBUG',
-            'filters': ['require_debug_true'],
+            'filters': ['require_devel_true'],
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
@@ -171,14 +174,14 @@ LOGGING = {
             'formatter': 'verbose'
         },
         'file': {
-            'level': 'DEBUG' if DEBUG else 'INFO',
+            'level': 'DEBUG' if DEVEL else 'INFO',
             'class': 'logging.FileHandler',
             'filename': LOG_DIR / 'django.log',
             'formatter': 'verbose' if DEBUG else 'simple',
         },
         'db_queries': {
             'level': 'DEBUG',
-            'filters': ['require_debug_true'],
+            'filters': ['require_devel_true'],
             'class': 'logging.FileHandler',
             'filename': LOG_DIR / 'db_queries.log',
         },
@@ -194,13 +197,13 @@ LOGGING = {
             'propagate': False,
         },
         'apps': {
-            'handlers': ['file', 'console'],
+            'handlers': ['file'],
             'level': 'DEBUG',
         },
-        'apps.insta_users.utils': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
-        }
+        'apps.insta_users.tasks': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
     },
 }
 
@@ -213,6 +216,6 @@ INSTA_FOLLOW_SETTINGS = {
     "delay_follow": 10,
     "delay_comment": 10,
     "lock_time": 30,
-    "pre_lock_time": 5,
-    "max_lock": 5,
+    "pre_lock_time": 10,
+    "max_lock": 10,
 }

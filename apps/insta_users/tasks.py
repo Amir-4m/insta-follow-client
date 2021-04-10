@@ -4,6 +4,7 @@ import time
 
 from django.utils import timezone
 from django.conf import settings
+from django.core.cache import cache
 
 from celery.schedules import crontab
 from celery.task import periodic_task
@@ -16,6 +17,8 @@ from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, 
 from .utils.instagram import instagram_login, do_instagram_action
 
 logger = logging.getLogger(__name__)
+
+INSTA_USER_LOCK_KEY = "insta_lock_%s"
 
 # TODO: for later use
 """
@@ -63,10 +66,15 @@ def stop_duplicate_task(func):
 
 
 # @stop_duplicate_task
-@periodic_task(run_every=crontab(minute='*/4'))
+@periodic_task(run_every=crontab(minute='*'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
+
+        if cache.get(INSTA_USER_LOCK_KEY % insta_user.id):
+            logger.debug(f'skipping insta_user: {insta_user.username}')
+            continue
+
         action = InstaAction.get_action_from_key(InstaAction.ACTION_FOLLOW)
         orders = insta_follow_get_orders(insta_user, action)
         logger.debug(f'retrieved {len(orders)} - {[o["id"] for o in orders]} - for user: {insta_user.username}')
@@ -75,6 +83,10 @@ def insta_user_action():
 
 @shared_task
 def do_orders(insta_user_id, orders):
+
+    _ck = INSTA_USER_LOCK_KEY % insta_user_id
+    cache.set(_ck, True, 60)
+
     insta_user = InstaUser.objects.select_related('proxy').get(id=insta_user_id)
     for order in orders:
         try:
@@ -85,6 +97,8 @@ def do_orders(insta_user_id, orders):
         else:
             insta_follow_order_done(insta_user, order['id'])
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{InstaAction.get_action_from_key(order['action'])}"])
+
+    cache.delete(_ck)
 
 
 @shared_task
@@ -100,7 +114,7 @@ def instagram_login_task(insta_user_id):
     instagram_login(insta_user)
 
 
-@periodic_task(run_every=crontab(minute='*/5'))
+@periodic_task(run_every=crontab(minute='*/10'))
 def reactivate_blocked_users():
     reactivated = 0
 
