@@ -98,10 +98,10 @@ def instagram_login_task(insta_user_id):
 @periodic_task(run_every=crontab(minute='*'))
 def check_temporary_blocked_users():
     InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED_TEMP,
-                             updated_time__gt=timezone.now() - timezone.timedelta(seconds=300)).update(status=InstaUser.STATUS_ACTIVE)
+                             updated_time__lt=timezone.now() - timezone.timedelta(seconds=300)).update(status=InstaUser.STATUS_ACTIVE)
 
 
 @periodic_task(run_every=crontab(minute='*'))
 def check_blocked_users():
     InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED,
-                             updated_time__gt=timezone.now() - timezone.timedelta(seconds=1800)).update(status=InstaUser.STATUS_ACTIVE)
+                             updated_time__lt=timezone.now() - timezone.timedelta(seconds=1800)).update(status=InstaUser.STATUS_ACTIVE)
