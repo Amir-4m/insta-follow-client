@@ -5,6 +5,6 @@ from .models import Proxy
 
 @admin.register(Proxy)
 class ProxyAdmin(admin.ModelAdmin):
-    list_display = ['ip', 'port',  'protocol', 'status']
-    list_filter = ['status']
+    list_display = ['server', 'port',  'protocol', 'is_enable']
+    list_filter = ['is_enable']
 

@@ -4,12 +4,6 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class Proxy(models.Model):
-    ENABLE_STATUS = 'enable'
-    DISABLE_STATUS = 'disable'
-    STATUS_CHOICES = (
-        (ENABLE_STATUS, _('enable')),
-        (DISABLE_STATUS, _('disable')),
-    )
     HTTP_PROTOCOL = 1
     HTTPS_PROTOCOL = 2
     PROTOCOL_CHOICES = (
@@ -17,23 +11,26 @@ class Proxy(models.Model):
         (HTTPS_PROTOCOL, _('HTTPS')),
     )
 
+    created_time = models.DateTimeField(_('created time'), auto_now_add=True)
+    updated_time = models.DateTimeField(_('updated time'), auto_now=True)
+
     protocol = models.PositiveSmallIntegerField(_('protocol'), choices=PROTOCOL_CHOICES)
-    ip = models.CharField(_('IP'), max_length=120)
+    server = models.CharField(_('server'), max_length=120)
     port = models.PositiveSmallIntegerField(_('port'))
 
     username = models.CharField(_('username'), max_length=50, blank=True)
     password = models.CharField(_('password'), max_length=50, blank=True)
 
-    status = models.CharField(_('status'), max_length=7, default=ENABLE_STATUS)
+    is_enable = models.BooleanField(_('is enable'), default=True)
 
     def __str__(self):
-        return f'{self.id}-{self.ip}'
+        return f'{self.id}-{self.server}'
 
     @staticmethod
     def get_low_traffic_proxy():
         try:
             return Proxy.objects.filter(
-                status=Proxy.ENABLE_STATUS
+                is_enable=True
             ).annotate(
                 used_number=Count('instauser_proxy')
             ).order_by('used_number').values('used_number', 'id')[0]['id']

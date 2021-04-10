@@ -13,7 +13,7 @@ def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
     if insta_user.proxy_id:
-        proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.ip}:{insta_user.proxy.port}'}
+        proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.server}:{insta_user.proxy.port}'}
         session.proxies.update(proxies)
 
     session.headers = {
@@ -50,7 +50,7 @@ def instagram_like(insta_user, media_id):
     session = requests.session()
 
     if insta_user.proxy_id:
-        proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.ip}:{insta_user.proxy.port}'}
+        proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.server}:{insta_user.proxy.port}'}
         session.proxies.update(proxies)
 
     session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
@@ -64,7 +64,7 @@ def instagram_follow(insta_user, target_user):
     session = requests.session()
 
     if insta_user.proxy_id:
-        proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.ip}:{insta_user.proxy.port}'}
+        proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.server}:{insta_user.proxy.port}'}
         session.proxies.update(proxies)
 
     session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
@@ -78,7 +78,7 @@ def instagram_comment(insta_user, media_id, comment):
     session = requests.session()
 
     if insta_user.proxy_id:
-        proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.ip}:{insta_user.proxy.port}'}
+        proxies = {f'{insta_user.proxy.protocol}': f'{insta_user.proxy.server}:{insta_user.proxy.port}'}
         session.proxies.update(proxies)
 
     session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
