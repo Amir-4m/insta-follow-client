@@ -9,6 +9,7 @@ from .utils.insta_follow import get_insta_follow_uuid
 @admin.register(InstaUser)
 class InstaUserAdmin(admin.ModelAdmin):
     list_display = ("username", "user_id", "status", "proxy")
+    list_filter = ("status", "proxy")
     search_fields = ("username", "user_id")
     raw_id_fields = ['proxy']
 

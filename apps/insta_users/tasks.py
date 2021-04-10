@@ -88,6 +88,10 @@ def do_orders(insta_user_id, orders):
     cache.set(_ck, True, 60)
 
     insta_user = InstaUser.objects.select_related('proxy').get(id=insta_user_id)
+
+    if insta_user.status != insta_user.STATUS_ACTIVE:
+        return
+
     for order in orders:
         try:
             do_instagram_action(insta_user, order)

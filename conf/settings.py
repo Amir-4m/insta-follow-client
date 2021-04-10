@@ -202,7 +202,8 @@ LOGGING = {
         },
         'apps.insta_users.tasks': {
             'handlers': ['console'],
-            'level': 'WARNING',
+            'level': 'DEBUG' if DEVEL else 'WARNING',
+            'propagate': False,
         },
     },
 }
