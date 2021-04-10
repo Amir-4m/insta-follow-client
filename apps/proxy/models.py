@@ -4,8 +4,8 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class Proxy(models.Model):
-    HTTP_PROTOCOL = 1
-    HTTPS_PROTOCOL = 2
+    HTTP_PROTOCOL = 'http'
+    HTTPS_PROTOCOL = 'https'
     PROTOCOL_CHOICES = (
         (HTTP_PROTOCOL, _('HTTP')),
         (HTTPS_PROTOCOL, _('HTTPS')),
@@ -14,7 +14,7 @@ class Proxy(models.Model):
     created_time = models.DateTimeField(_('created time'), auto_now_add=True)
     updated_time = models.DateTimeField(_('updated time'), auto_now=True)
 
-    protocol = models.PositiveSmallIntegerField(_('protocol'), choices=PROTOCOL_CHOICES)
+    protocol = models.CharField(_('protocol'), max_length=5, choices=PROTOCOL_CHOICES)
     server = models.CharField(_('server'), max_length=120)
     port = models.PositiveSmallIntegerField(_('port'))
 
