@@ -34,7 +34,7 @@ SECRET_KEY = config("SECRET_KEY")
 INSTALLED_APPS = [
     # Local
     'apps.insta_users',
-    'apps.proxy',
+    'apps.proxies',
 
     # Third Parties
     
@@ -94,9 +94,8 @@ CACHES = {
     'default': {
         'BACKEND': config('CACHE_BACKEND', default='django.core.cache.backends.locmem.LocMemCache'),
         'LOCATION': config('CACHE_HOST', default=''),
-        'KEY_PREFIX': 'INSTA_FOLLOW',
+        'KEY_PREFIX': 'INSTA_FOLLOW_CLIENT',
     },
-
 }
 
 CELERY_BROKER_URL = 'amqp://%(USER)s:%(PASS)s@%(HOST)s' % {

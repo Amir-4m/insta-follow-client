@@ -1,14 +1,14 @@
 from django.db import models
-from django.db.models import Count, Min
+from django.db.models import Count
 from django.utils.translation import ugettext_lazy as _
 
 
 class Proxy(models.Model):
-    HTTP_PROTOCOL = 'http'
-    HTTPS_PROTOCOL = 'https'
+    PROTOCOL_HTTP = 'http'
+    PROTOCOL_HTTPS = 'https'
     PROTOCOL_CHOICES = (
-        (HTTP_PROTOCOL, _('HTTP')),
-        (HTTPS_PROTOCOL, _('HTTPS')),
+        (PROTOCOL_HTTP, _('HTTP')),
+        (PROTOCOL_HTTPS, _('HTTPS')),
     )
 
     created_time = models.DateTimeField(_('created time'), auto_now_add=True)
@@ -32,7 +32,7 @@ class Proxy(models.Model):
             return Proxy.objects.filter(
                 is_enable=True
             ).annotate(
-                used_number=Count('instauser_proxy')
+                used_number=Count('insta_users')
             ).order_by('used_number').values('used_number', 'id')[0]['id']
         except KeyError:
             return None

@@ -70,7 +70,7 @@ def insta_user_action():
 
 @shared_task
 def do_orders(insta_user_id, orders):
-    insta_user = InstaUser.objects.get(id=insta_user_id)
+    insta_user = InstaUser.objects.select_related('proxy').get(id=insta_user_id)
     for order in orders:
         try:
             instagram_follow(insta_user, order['entity_id'])
