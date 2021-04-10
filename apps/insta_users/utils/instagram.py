@@ -2,8 +2,9 @@ import logging
 import requests
 
 from datetime import datetime
+from apps.insta_users.models import InstaAction
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
@@ -53,28 +54,52 @@ def get_action_session(insta_user):
     return session
 
 
+def do_instagram_action(insta_user, order):
+
+    logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[target: {order['entity_id']}]")
+
+    try:
+        _s = instagram_follow(insta_user, order['entity_id'])
+        _s.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        logger.warning(f'[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
+
+        if _s.status_code == 429:
+            insta_user.status = insta_user.STATUS_BLOCKED_TEMP
+            insta_user.save()
+
+        elif _s.status_code == 400:
+            try:
+                is_spam = _s.json()['spam']
+            except:
+                is_spam = False
+
+            if is_spam:
+                insta_user.status = insta_user.STATUS_BLOCKED
+                insta_user.save()
+        raise
+
+    except Exception as e:
+        logger.error(f'[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]')
+        raise
+
+
 def instagram_like(insta_user, media_id):
     session = get_action_session(insta_user)
-
-    session.post(f"https://www.instagram.com/web/likes/{media_id}/like/")
-    logger.debug(f"[like succeeded]-[insta_user: {insta_user.username}]-[media_id: {media_id}]")
+    return session.post(f"https://www.instagram.com/web/likes/{media_id}/like/")
 
 
 def instagram_follow(insta_user, target_user):
     session = get_action_session(insta_user)
-
-    _s = session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
-    _s.raise_for_status()
-    logger.debug(f"[follow succeeded]-[insta_user: {insta_user.username}]-[target_user: {target_user}]")
+    return session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
 
 
 def instagram_comment(insta_user, media_id, comment):
     session = get_action_session(insta_user)
-
     data = {
         "comment_text": comment,
         "replied_to_comment_id": ""
     }
+    return session.post(f"https://www.instagram.com/web/comments/{media_id}/add/", data=data)
 
-    session.post(f"https://www.instagram.com/web/comments/{media_id}/add/", data=data)
-    logger.debug(f"[comment succeeded]-[insta_user: {insta_user.username}]-[media_id: {media_id}]")

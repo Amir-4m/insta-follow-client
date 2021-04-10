@@ -9,7 +9,7 @@ from pid import PidFile
 
 from .models import InstaUser, InstaAction
 from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
-from .utils.instagram import instagram_login, instagram_follow
+from .utils.instagram import instagram_login, do_instagram_action
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def p_insta_user_action():
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
-        action = InstaAction.ACTION_FOLLOW
+        action = InstaAction.ACTION_CHOICES[1][1]
         orders = insta_follow_get_orders(insta_user, action)
         logger.debug(f'retrieved {len(orders)} - {[o["id"] for o in orders]} - for user: {insta_user.username}')
         do_orders.delay(insta_user.id, orders)
@@ -74,9 +74,10 @@ def do_orders(insta_user_id, orders):
     insta_user = InstaUser.objects.select_related('proxy').get(id=insta_user_id)
     for order in orders:
         try:
-            instagram_follow(insta_user, order['entity_id'])
+            do_instagram_action(insta_user, order)
         except Exception as e:
             logger.error(f'[Could not perform instagram action]-[insta_user: {insta_user.username}]-[order: {order}]-[err: {type(e)}, {e}]')
+            break
         else:
             insta_follow_order_done(insta_user, order['id'])
         time.sleep(5)
@@ -92,3 +93,21 @@ def insta_follow_login_task(insta_user_id):
 def instagram_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
     instagram_login(insta_user)
+
+
+"""
+@periodic_task(run_every=crontab(minute='*'))
+def check_temporary_blocked_users():
+    temporary_blocked_users = InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED_TEMP)
+    for usr in temporary_blocked_users:
+        if (timezone.now() - usr.updated_time).seconds > settings.USER_DELAY_LOCK_TIMING["pre_lock_like"]*60:
+            usr.status = InstaUser.STATUS_ACTIVE
+
+
+@periodic_task(run_every=crontab(minute='*'))
+def check_blocked_users():
+    temporary_blocked_users = InstaUser.objects.filter(status=InstaUser.STATUS_BLOCKED)
+    for usr in temporary_blocked_users:
+        if (timezone.now() - usr.updated_time).seconds > settings.USER_DELAY_LOCK_TIMING["lock_like"]*60:
+            usr.status = InstaUser.STATUS_ACTIVE
+"""

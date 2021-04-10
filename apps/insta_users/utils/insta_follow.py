@@ -10,7 +10,7 @@ from django.utils.encoding import smart_text
 from Crypto.Cipher import AES
 from Crypto import Random
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
 INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/orders/'
@@ -84,7 +84,7 @@ def insta_follow_get_orders(insta_user, action):
     params = dict(limit=settings.INSTA_FOLLOW_ORDER_LIMIT)
     url = f'{INSTA_FOLLOW_ORDERS_URL}{action}/'
 
-    logger.debug(f"[insta_follow orders]-[insta user id: {insta_user.id}]-[params: {params}]")
+    logger.debug(f"[insta_follow orders]-[insta user id: {insta_user.username}]-[params: {params}]")
 
     res = []
     try:

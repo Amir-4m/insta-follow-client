@@ -3,14 +3,14 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class InstaAction(object):
-    ACTION_LIKE = 'like'
-    ACTION_FOLLOW = 'follow'
-    ACTION_COMMENT = 'comment'
+    ACTION_LIKE = 'L'
+    ACTION_FOLLOW = 'F'
+    ACTION_COMMENT = 'C'
 
     ACTION_CHOICES = (
-        (ACTION_LIKE, _('Like')),
-        (ACTION_FOLLOW, _('Follow')),
-        (ACTION_COMMENT, _('Comment')),
+        (ACTION_LIKE, 'like'),
+        (ACTION_FOLLOW, 'follow'),
+        (ACTION_COMMENT, 'comment'),
     )
 
 
