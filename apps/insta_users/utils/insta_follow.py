@@ -14,7 +14,7 @@ logger = logging.getLogger(__file__)
 
 INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
 INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/orders/'
-INSTA_FOLLOW_INQUIRIES = f'{settings.INSTAFOLLOW_BASE_URL}/instagram/inquiries/done/'
+INSTA_FOLLOW_INQUIRIES = f'{settings.INSTAFOLLOW_BASE_URL}/api/v1/instagram/inquiries/done/'
 
 
 class CryptoService:
@@ -69,8 +69,9 @@ def get_insta_follow_uuid(insta_user):
     logger.debug(f"[insta_follow register]-[insta user id: {insta_user.id}]-[params: {params}]")
 
     try:
-        response = requests.post(url, json=params)
-        return response.json()['uuid']
+        _r = requests.post(url, json=params)
+        _r.raise_for_status()
+        return _r.json()['uuid']
     except requests.exceptions.HTTPError as e:
         logger.warning(f'[insta_follow register]-[HTTPError]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
     except requests.exceptions.ConnectTimeout as e:
@@ -88,8 +89,9 @@ def insta_follow_get_orders(insta_user, action):
     res = []
     try:
         headers = dict(Authorization=generate_insta_follow_token(insta_user.server_key))
-        response = requests.get(url, params=params, headers=headers)
-        res = response.json()
+        _r = requests.get(url, params=params, headers=headers)
+        _r.raise_for_status()
+        res = _r.json()
     except requests.exceptions.HTTPError as e:
         logger.warning(f'[insta_follow orders]-[HTTPError]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
     except requests.exceptions.ConnectTimeout as e:
@@ -105,7 +107,8 @@ def insta_follow_order_done(insta_user, order_id):
     url = INSTA_FOLLOW_INQUIRIES
     try:
         headers = dict(Authorization=generate_insta_follow_token(insta_user.server_key))
-        requests.post(url, json={'order_id': order_id}, headers=headers)
+        _r = requests.post(url, json={'order': order_id}, headers=headers)
+        _r.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.warning(f'[insta_follow order done]-[HTTPError]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
     except requests.exceptions.ConnectTimeout as e:

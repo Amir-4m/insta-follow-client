@@ -49,7 +49,7 @@ class InstaUser(models.Model):
 
     status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_ACTIVE, db_index=True)
     server_key = models.UUIDField(_('server Key'), blank=True, null=True, help_text=_('insta follow server key'))
-    proxy = models.ForeignKey('apps.proxies.Proxy', on_delete=models.SET_NULL, null=True, related_name='insta_users')
+    proxy = models.ForeignKey('proxies.Proxy', on_delete=models.SET_NULL, null=True, blank=True, related_name='insta_users')
 
     objects = LiveManager()
 

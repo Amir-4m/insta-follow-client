@@ -61,11 +61,11 @@ def p_insta_user_action():
 
 @stop_duplicate_task
 def insta_user_action():
-    insta_user_ids = InstaUser.objects.live().values_list('id', flat=True)
-    for insta_user_id in insta_user_ids:
+    insta_users = InstaUser.objects.live()
+    for insta_user in insta_users:
         action = InstaAction.ACTION_FOLLOW
-        orders = insta_follow_get_orders(insta_user_id, action)
-        do_orders.delay(insta_user_id, orders)
+        orders = insta_follow_get_orders(insta_user, action)
+        do_orders.delay(insta_user.id, orders)
 
 
 @shared_task
@@ -77,7 +77,7 @@ def do_orders(insta_user_id, orders):
         except Exception as e:
             logger.error(f'[Could not perform instagram action]-[insta_user: {insta_user_id.username}]-[order: {order}]-[err: {type(e)}, {e}]')
         else:
-            insta_follow_order_done(insta_user_id, order['id'])
+            insta_follow_order_done(insta_user, order['id'])
         time.sleep(5)
 
 
