@@ -5,6 +5,8 @@ import time
 from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import F, DurationField
+from django.db.models.functions import Cast, Now
 
 from celery.schedules import crontab
 from celery.task import periodic_task
@@ -128,11 +130,15 @@ def reactivate_blocked_users():
         status=InstaUser.STATUS_ACTIVE
     )
 
-    # reactivated += InstaUser.objects.filter(
-    #     status=InstaUser.STATUS_BLOCKED,
-    #     updated_time__lt=timezone.now() - timezone.timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS['lock_time'])
-    # ).update(
-    #     status=InstaUser.STATUS_ACTIVE
-    # )
+    reactivated += InstaUser.objects.filter(
+        status=InstaUser.STATUS_BLOCKED,
+    ).annotate(
+        passed_time=Cast(Now() - F('updated_time'), output_field=DurationField()),
+        waiting_time=Cast(F('block_count') * timezone.timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS['lock_time']), output_field=DurationField())
+    ).filter(
+        passed_time__gt=F('waiting_time')
+    ).update(
+        status=InstaUser.STATUS_ACTIVE
+    )
 
     return reactivated
