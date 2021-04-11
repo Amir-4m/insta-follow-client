@@ -39,7 +39,7 @@ def instagram_login(insta_user, commit=True):
         insta_user.user_id = session.cookies['ds_user_id']
         logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
     else:
-        insta_user.username = None
+        insta_user.session = None
         insta_user.status = insta_user.STATUS_WRONG
 
     if commit:
