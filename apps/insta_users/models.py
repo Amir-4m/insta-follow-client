@@ -35,6 +35,7 @@ class InstaUser(models.Model):
     STATUS_BLOCKED_TEMP = 20
     STATUS_BLOCKED = 21
     STATUS_REMOVED = 30
+    STATUS_DISABLED = 31
     STATUS_WRONG = 40
 
     STATUS_CHOICES = (
@@ -42,6 +43,7 @@ class InstaUser(models.Model):
         (STATUS_BLOCKED, _("blocked")),
         (STATUS_BLOCKED_TEMP, _("blocked temporary")),
         (STATUS_REMOVED, _("removed")),
+        (STATUS_DISABLED, _("disabled")),
         (STATUS_WRONG, _("wrong credentials")),
     )
 

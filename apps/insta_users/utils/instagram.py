@@ -72,11 +72,18 @@ def do_instagram_action(insta_user, order):
             insta_user.save()
 
         elif _s.status_code == 400:
-            is_spam = _s.json().get('spam', False)
-            if is_spam:
+            result = _s.json()
+            message = result.get('message', '')
+            if message == 'feedback_required' and result.get('spam', False):
                 insta_user.status = insta_user.STATUS_BLOCKED
                 insta_user.block_count = min(insta_user.block_count + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
-                insta_user.save()
+
+            if message == 'checkpoint_required' and not result.get('lock', True):
+                insta_user.status = insta_user.STATUS_DISABLED
+                insta_user.session = None
+
+            insta_user.save()
+
         raise
 
     except Exception as e:

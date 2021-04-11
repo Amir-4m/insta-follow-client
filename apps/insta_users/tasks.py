@@ -128,11 +128,11 @@ def reactivate_blocked_users():
         status=InstaUser.STATUS_ACTIVE
     )
 
-    reactivated += InstaUser.objects.filter(
-        status=InstaUser.STATUS_BLOCKED,
-        updated_time__lt=timezone.now() - timezone.timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS['lock_time'])
-    ).update(
-        status=InstaUser.STATUS_ACTIVE
-    )
+    # reactivated += InstaUser.objects.filter(
+    #     status=InstaUser.STATUS_BLOCKED,
+    #     updated_time__lt=timezone.now() - timezone.timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS['lock_time'])
+    # ).update(
+    #     status=InstaUser.STATUS_ACTIVE
+    # )
 
     return reactivated
