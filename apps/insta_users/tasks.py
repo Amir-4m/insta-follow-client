@@ -71,38 +71,37 @@ def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
 
-        if cache.get(INSTA_USER_LOCK_KEY % insta_user.id):
+        _ck = INSTA_USER_LOCK_KEY % insta_user.id
+        if cache.get(_ck):
             logger.debug(f'skipping insta_user: {insta_user.username}')
             continue
 
         action = InstaAction.get_action_from_key(InstaAction.ACTION_FOLLOW)
         orders = insta_follow_get_orders(insta_user, action)
         logger.debug(f'retrieved {len(orders)} - {[o["id"] for o in orders]} - for user: {insta_user.username}')
+
+        cache.set(_ck, True, 300)
         do_orders.delay(insta_user.id, orders)
 
 
 @shared_task
 def do_orders(insta_user_id, orders):
 
-    _ck = INSTA_USER_LOCK_KEY % insta_user_id
-    cache.set(_ck, True, 60)
-
     insta_user = InstaUser.objects.select_related('proxy').get(id=insta_user_id)
-
     if insta_user.status != insta_user.STATUS_ACTIVE:
+        logger.debug(f'insta_user: {insta_user.username} is not active!')
         return
 
     for order in orders:
         try:
             do_instagram_action(insta_user, order)
-        except Exception as e:
-            logger.error(f'[Could not perform instagram action]-[insta_user: {insta_user.username}]-[order: {order}]-[err: {type(e)}, {e}]')
+        except:
             break
         else:
             insta_follow_order_done(insta_user, order['id'])
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{InstaAction.get_action_from_key(order['action'])}"])
 
-    cache.delete(_ck)
+    cache.delete(INSTA_USER_LOCK_KEY % insta_user_id)
 
 
 @shared_task
