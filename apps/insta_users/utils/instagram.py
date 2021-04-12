@@ -36,18 +36,21 @@ def instagram_login(insta_user, commit=True):
 
     try:
         is_auth = login_resp.json()['authenticated']
-    except Exception as e:
-        is_auth = False
-        logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[body: {login_resp.text}]')
+        if is_auth:
+            insta_user.status = insta_user.STATUS_ACTIVE
+            insta_user.session = session.cookies.get_dict()
+            insta_user.user_id = session.cookies['ds_user_id']
+            logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
+        else:
+            insta_user.status = insta_user.STATUS_LOGIN_FAILED
 
-    if is_auth:
-        insta_user.status = insta_user.STATUS_ACTIVE
-        insta_user.session = session.cookies.get_dict()
-        insta_user.user_id = session.cookies['ds_user_id']
-        logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
-    else:
-        insta_user.status = insta_user.STATUS_WRONG
-        insta_user.clear_session()
+    except KeyError:
+        logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[result: {login_resp.json()}]')
+        insta_user.status = insta_user.STATUS_DISABLED
+
+    except Exception as e:
+        logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[result: {login_resp.text}]')
+        insta_user.status = insta_user.STATUS_LOGIN_FAILED
 
     if commit:
         insta_user.save()
@@ -112,8 +115,8 @@ def do_instagram_action(insta_user, order):
 
             if message == 'feedback_required' and result.get('spam', False):
                 insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)
-                if order['action'] == InstaAction.ACTION_FOLLOW:
-                    insta_user.clear_session()
+                # if order['action'] == InstaAction.ACTION_FOLLOW:
+                #     insta_user.clear_session()
 
             if message == 'checkpoint_required' and not result.get('lock', True):
                 insta_user.status = insta_user.STATUS_DISABLED

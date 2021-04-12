@@ -78,11 +78,12 @@ def insta_user_action():
         action = action_selected[1]
 
         if insta_user.is_blocked(action_selected[0]):
+            logger.debug(f'skipping insta_user: {insta_user.username}, action {action} blocked')
             continue
 
         _ck = INSTA_USER_LOCK_KEY % insta_user.id
         if cache.get(_ck):
-            logger.debug(f'skipping insta_user: {insta_user.username} for action {action}')
+            logger.debug(f'skipping insta_user: {insta_user.username} locked, action {action}')
             continue
 
         orders = insta_follow_get_orders(insta_user, action)
@@ -144,3 +145,11 @@ def reactivate_blocked_users():
 
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
+
+    InstaUser.objects.filter(
+        status=InstaUser.STATUS_DISABLED,
+        updated_time__lt=timezone.now() - timezone.timedelta(days=30)
+    ).update(
+        status=InstaUser.STATUS_ACTIVE,
+        session=None
+    )
