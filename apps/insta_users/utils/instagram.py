@@ -89,8 +89,9 @@ def do_instagram_action(insta_user, order):
 
     logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[target: {order['entity_id']}]")
 
+    action = InstaAction.get_action_from_key(order['action'])
+
     try:
-        action = InstaAction.get_action_from_key(order['action'])
         action_to_call = globals()[f'instagram_{action}']
         args = (insta_user, order['entity_id'])
         if order['action'] == InstaAction.ACTION_COMMENT:
@@ -100,7 +101,7 @@ def do_instagram_action(insta_user, order):
         _s.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        log_txt = f'[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[status code: {e.response.status_code}]'
+        log_txt = f'[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {action}]-[status code: {e.response.status_code}]'
         if 'json' in _s.headers['content-type']:
             log_txt += f'-[err: {e.response.text}]'
         logger.warning(log_txt)
@@ -128,6 +129,14 @@ def do_instagram_action(insta_user, order):
             insta_user.save()
 
         raise
+
+    except requests.exceptions.ConnectionError:
+        proxy = insta_user.proxy
+        proxy.is_enable = False
+        proxy.save()
+
+        insta_user.clear_session()
+        insta_user.save()
 
     except Exception as e:
         logger.error(f'[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]')

@@ -66,7 +66,7 @@ def get_insta_follow_uuid(insta_user):
         session_id=insta_user.session['sessionid']
     )
     url = INSTA_FOLLOW_LOGIN_URL
-    logger.debug(f"[insta_follow register]-[insta user id: {insta_user.id}]-[params: {params}]")
+    logger.debug(f"[insta_follow register]-[insta_user: {insta_user.username}]-[params: {params}]")
 
     try:
         _r = requests.post(url, json=params)
@@ -104,7 +104,7 @@ def insta_follow_get_orders(insta_user, action):
 
 def insta_follow_order_done(insta_user, order_id, status=True):
 
-    logger.debug(f"[insta_follow order done]-[insta user id: {insta_user.username}]-[order: {order_id}]-[status: {status}]")
+    logger.debug(f"[insta_follow order done]-[insta_user: {insta_user.username}]-[order: {order_id}]-[status: {status}]")
 
     url = INSTA_FOLLOW_INQUIRIES
     try:

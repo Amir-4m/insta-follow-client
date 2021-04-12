@@ -74,7 +74,7 @@ def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
 
-        action_selected = random.choice(InstaAction.ACTION_CHOICES)
+        action_selected = random.choice(InstaAction.ACTION_CHOICES[:2])
         action = action_selected[1]
 
         if insta_user.is_blocked(action_selected[0]):
