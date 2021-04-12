@@ -100,12 +100,12 @@ def do_orders(insta_user_id, orders, action):
     all_done = True
     for order in orders:
         try:
-            do_instagram_action(insta_user, order)
+            result = do_instagram_action(insta_user, order)
         except:
             all_done = False
             break
         else:
-            insta_follow_order_done(insta_user, order['id'])
+            insta_follow_order_done(insta_user, order['id'], result)
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
     if all_done:

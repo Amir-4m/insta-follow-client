@@ -122,6 +122,9 @@ def do_instagram_action(insta_user, order):
                 insta_user.status = insta_user.STATUS_DISABLED
                 insta_user.clear_session()
 
+            if order['action'] == InstaAction.ACTION_COMMENT and result.get('status', '') == 'fail':
+                return False
+
             insta_user.save()
 
         raise
@@ -129,3 +132,5 @@ def do_instagram_action(insta_user, order):
     except Exception as e:
         logger.error(f'[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]')
         raise
+
+    return True

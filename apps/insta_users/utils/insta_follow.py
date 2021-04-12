@@ -84,7 +84,7 @@ def insta_follow_get_orders(insta_user, action):
     params = dict(limit=settings.INSTA_FOLLOW_ORDER_LIMIT)
     url = f'{INSTA_FOLLOW_ORDERS_URL}{action}/'
 
-    logger.debug(f"[insta_follow orders]-[insta user id: {insta_user.username}]-[params: {params}]")
+    logger.debug(f"[insta_follow orders]-[insta_user: {insta_user.username}]-[action: {action}]-[params: {params}]")
 
     res = []
     try:
@@ -102,14 +102,20 @@ def insta_follow_get_orders(insta_user, action):
     return res
 
 
-def insta_follow_order_done(insta_user, order_id):
+def insta_follow_order_done(insta_user, order_id, status=True):
 
-    logger.debug(f"[insta_follow order done]-[insta user id: {insta_user.username}]-[order: {order_id}]")
+    logger.debug(f"[insta_follow order done]-[insta user id: {insta_user.username}]-[order: {order_id}]-[status: {status}]")
 
     url = INSTA_FOLLOW_INQUIRIES
     try:
         headers = dict(Authorization=generate_insta_follow_token(insta_user.server_key))
-        _r = requests.post(url, json={'order': order_id}, headers=headers)
+        _r = requests.post(url, headers=headers, json={
+            'order': order_id,
+            'status': {
+                True: 0,
+                False: 2
+            }.get(status, 0)
+        })
         _r.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.warning(f'[insta_follow order done]-[HTTPError]-[insta_user: {insta_user.username}]-[order: {order_id}]-[status code: {e.response.status_code}]-[err: {e.response.text}]')

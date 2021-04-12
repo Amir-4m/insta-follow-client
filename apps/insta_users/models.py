@@ -11,8 +11,8 @@ class InstaAction(object):
     ACTION_COMMENT = 'C'
 
     ACTION_CHOICES = (
-        (ACTION_LIKE, 'like'),
         (ACTION_FOLLOW, 'follow'),
+        (ACTION_LIKE, 'like'),
         (ACTION_COMMENT, 'comment'),
     )
 
