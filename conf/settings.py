@@ -225,7 +225,4 @@ INSTA_FOLLOW_SETTINGS = {
     "pre_lock_comment": 5,
 
     "max_lock": 10,
-
-    "lock_time": 30,
-    "pre_lock_time": 10,
 }

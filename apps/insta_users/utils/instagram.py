@@ -1,15 +1,20 @@
 import logging
 import requests
+import random
 
 from datetime import datetime
 
-from django.conf import settings
-# from apps.insta_users.models import InstaAction
+from fake_useragent import UserAgent
+
+from apps.proxies.models import Proxy
+from apps.insta_users.models import InstaAction
 
 logger = logging.getLogger(__name__)
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
+
+ua = UserAgent()
 
 
 def instagram_login(insta_user, commit=True):
@@ -17,11 +22,12 @@ def instagram_login(insta_user, commit=True):
 
     session.headers = {
         'Referer': INSTAGRAM_BASE_URL,
-        'user-agent': "Mozilla/5.0 (Windows NT 10.0; ) Gecko/20100101 Firefox/65.0",
+        'user-agent': ua.random,
     }
 
     resp = session.get(INSTAGRAM_BASE_URL)
     session.headers.update({'X-CSRFToken': resp.cookies['csrftoken']})
+    insta_user.proxy_id = Proxy.get_proxy()
     insta_user.set_proxy(session)
 
     login_data = {'username': insta_user.username, 'enc_password': f'#PWD_INSTAGRAM_BROWSER:0:{datetime.now().timestamp()}:{insta_user.password}'}
@@ -32,15 +38,16 @@ def instagram_login(insta_user, commit=True):
         is_auth = login_resp.json()['authenticated']
     except Exception as e:
         is_auth = False
-        logger.critical(f'[Instagram Login]-[{type(e)}]-[err: {e}]')
+        logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[body: {login_resp.text}]')
 
     if is_auth:
+        insta_user.status = insta_user.STATUS_ACTIVE
         insta_user.session = session.cookies.get_dict()
         insta_user.user_id = session.cookies['ds_user_id']
         logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
     else:
-        insta_user.session = None
         insta_user.status = insta_user.STATUS_WRONG
+        insta_user.clear_session()
 
     if commit:
         insta_user.save()
@@ -54,41 +61,6 @@ def get_action_session(insta_user):
     insta_user.set_proxy(session)
 
     return session
-
-
-def do_instagram_action(insta_user, order):
-
-    logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[target: {order['entity_id']}]")
-
-    try:
-        _s = instagram_follow(insta_user, order['entity_id'])
-        _s.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-        logger.warning(f'[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[status code: {e.response.status_code}]-[err: {e.response.text}]')
-
-        if _s.status_code == 429:
-            insta_user.status = insta_user.STATUS_BLOCKED_TEMP
-            insta_user.save()
-
-        elif _s.status_code == 400:
-            result = _s.json()
-            message = result.get('message', '')
-            if message == 'feedback_required' and result.get('spam', False):
-                insta_user.status = insta_user.STATUS_BLOCKED
-                insta_user.block_count = min(insta_user.block_count + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
-
-            if message == 'checkpoint_required' and not result.get('lock', True):
-                insta_user.status = insta_user.STATUS_DISABLED
-                insta_user.session = None
-
-            insta_user.save()
-
-        raise
-
-    except Exception as e:
-        logger.error(f'[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]')
-        raise
 
 
 def instagram_like(insta_user, media_id):
@@ -109,3 +81,48 @@ def instagram_comment(insta_user, media_id, comment):
     }
     return session.post(f"https://www.instagram.com/web/comments/{media_id}/add/", data=data)
 
+
+def do_instagram_action(insta_user, order):
+
+    logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[target: {order['entity_id']}]")
+
+    try:
+        action = InstaAction.get_action_from_key(order['action'])
+        action_to_call = globals()[f'instagram_{action}']
+        args = (insta_user, order['entity_id'])
+        if order['action'] == InstaAction.ACTION_COMMENT:
+            args += (random.choice(order['comments']),)
+
+        _s = action_to_call(*args)
+        _s.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        log_txt = f'[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[status code: {e.response.status_code}]'
+        if 'json' in _s.headers['content-type']:
+            log_txt += f'-[err: {e.response.text}]'
+        logger.warning(log_txt)
+
+        if _s.status_code == 429:
+            insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
+            insta_user.save()
+
+        elif _s.status_code == 400:
+            result = _s.json()
+            message = result.get('message', '')
+
+            if message == 'feedback_required' and result.get('spam', False):
+                insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)
+                if order['action'] == InstaAction.ACTION_FOLLOW:
+                    insta_user.clear_session()
+
+            if message == 'checkpoint_required' and not result.get('lock', True):
+                insta_user.status = insta_user.STATUS_DISABLED
+                insta_user.clear_session()
+
+            insta_user.save()
+
+        raise
+
+    except Exception as e:
+        logger.error(f'[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]')
+        raise
