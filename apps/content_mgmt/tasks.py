@@ -2,30 +2,44 @@ import os
 
 from datetime import datetime
 
-from celery import shared_task
+import requests
 
 from apps.insta_users.utils.instagram import get_action_session
+from PIL import Image
+
+from conf import settings
 
 
-@shared_task
-def change_profile_pic(insta_user, profile_pic):
+def change_profile_pic(insta_user, content):
     session = get_action_session(insta_user)
 
     url = "https://www.instagram.com/accounts/web_change_profile_picture/"
 
-    files = {'profile_pic': open(profile_pic.profile_picture.path, 'rb')}
+    img_file = os.path.join(f'{settings.MEDIA_ROOT}/{content.created_time}--temp.jpg')
+    r = requests.get(content.image_url)
+    open(img_file, 'wb').write(r.content)
+
+    files = {'profile_pic': open(f'{settings.MEDIA_ROOT}/{content.created_time}--temp.jpg', 'rb')}
     values = {"Content-Disposition": "form-data", "name": "profile_pic", "filename": "profilepic.jpg",
               "Content-Type": "image/jpeg"}
 
-    return session.post(url, files=files, data=values)
+    s = session.post(url, files=files, data=values)
+    os.remove(f'{settings.MEDIA_ROOT}/{content.created_time}--temp.jpg')
+    return s
 
 
-@shared_task
-def post_pic(insta_user, picture, caption):
+def post_pic(insta_user, content):
     session = get_action_session(insta_user)
 
+    img_file = os.path.join(f'{settings.MEDIA_ROOT}/{content.created_time}--temp.jpg')
+    r = requests.get(content.image_url)
+    open(img_file, 'wb').write(r.content)
+    image = Image.open(f'{settings.MEDIA_ROOT}/{content.created_time}--temp.jpg')
+    image.thumbnail((800, 1000), Image.ANTIALIAS)
+    image.save(f'{settings.MEDIA_ROOT}/{content.created_time}--temp2.jpg', 'JPEG', quality=88)
+
     microtime = int(datetime.now().timestamp())
-    pic_size = os.path.getsize(picture.post_picture.path)
+    pic_size = os.path.getsize(f'{settings.MEDIA_ROOT}/{content.created_time}--temp2.jpg')
     headers = {
         "content-type": "image / jpg",
         "X-Entity-Name": f"fb_uploader_{microtime}",
@@ -36,14 +50,89 @@ def post_pic(insta_user, picture, caption):
         'Referer': 'https://www.instagram.com/create/crop/',
     }
     session.headers.update(headers)
-    session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}', data=open(picture.post_picture.path, "rb"))
+    session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
+                 data=open(f'{settings.MEDIA_ROOT}/{content.created_time}--temp2.jpg', "rb"))
 
     body = {
         'upload_id': f'{microtime}',
-        "caption": caption,
+        'caption': content.caption,
         'custom_accessibility_caption': '',
         'retry_timeout': '',
     }
     session.headers.update({'Referer': 'https://www.instagram.com/create/details/'})
     session.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
-    return session.post('https://www.instagram.com/create/configure/', data=body)
+    s = session.post('https://www.instagram.com/create/configure/', data=body)
+    os.remove(f'{settings.MEDIA_ROOT}/{content.created_time}--temp.jpg')
+    os.remove(f'{settings.MEDIA_ROOT}/{content.created_time}--temp2.jpg')
+    return s
+
+
+# def post_vid():
+#     insta_user = InstaUser.objects.first()
+#     session = requests.session()
+#     session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
+#     session.headers.update({'X-Instagram-AJAX': '7e64493c83ae'})
+#     session.cookies.update(insta_user.session)
+#
+#     microtime = int(datetime.now().timestamp())
+#     video = cv2.VideoCapture('vid.mp4')
+#     frames = video.get(cv2.CAP_PROP_FRAME_COUNT)
+#     fps = video.get(cv2.CAP_PROP_FPS)
+#     height = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+#     width = video.get(cv2.CAP_PROP_FRAME_WIDTH)
+#
+#     rupload_params = {
+#         "retry_context": '{"num_step_auto_retry":0,"num_reupload":0,"num_step_manual_retry":0}',
+#         "media_type": "2",
+#         "xsharing_user_ids": "[]",
+#         "upload_id": str(microtime),
+#         "upload_media_duration_ms": str(int((frames / fps) * 1000)),
+#         "upload_media_width": str(width),
+#         "upload_media_height": str(height),
+#
+#     }
+#
+#     headers = {
+#
+#         "Accept-Encoding": "gzip",
+#         "X-Instagram-Rupload-Params": json.dumps(rupload_params),
+#         "X_FB_VIDEO_WATERFALL_ID": str(uuid4()),
+#         "X-Entity-Type": "video/mp4",
+#         "X-Entity-Name": f"{microtime}",
+#         "Offset": "0",
+#         "X-Entity-Length": str(int((frames / fps) * 1000)),
+#         "Content-Type": "application/octet-stream",
+#         "Content-Length": str(int((frames / fps) * 1000)),
+#
+#     }
+#
+#     session.headers.update(headers)
+#
+#     s = session.post(f"https://www.instagram.com/rupload_igvideo/{microtime}", data=open('vid.mp4', "rb").read())
+#     print(s.status_code)
+#     print(s.text)
+#
+#     vid_body = {
+#         "upload_id": str(microtime),
+#         "source_type": 2,
+#         "poster_frame_index": 0,
+#         "length": 0.00,
+#         "audio_muted": False,
+#         # "date_time_original": time.strftime("%Y:%m:%d %H:%M:%S", time.localtime()),
+#         "timezone_offset": "10800",
+#         "width": width,
+#         "height": height,
+#         "clips": [
+#             {
+#                 "length": str(int((frames / fps)) * 1000),
+#                 "source_type": "2"
+#             }
+#         ],
+#         "extra": {"source_width": width, "source_height": height},
+#         "caption": "video done",
+#     }
+#
+#     # session.headers.update(upload_headers)
+#     s2 = session.post("https://api.instagram.com/v1/media/configure/?video=1", data=vid_body)
+#     print(s2.status_code)
+#     print(s2.text)

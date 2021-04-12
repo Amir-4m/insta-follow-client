@@ -6,3 +6,4 @@ requests
 celery~=4.4.2
 pycrypto==2.6.1
 pid~=3.0
+pillow~=8.2
