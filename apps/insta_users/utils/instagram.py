@@ -146,12 +146,15 @@ def do_instagram_action(insta_user, order):
         action = InstaAction.get_action_from_key(order['action'])
         action_to_call = globals()[f'instagram_{action}']
         _s = action_to_call(insta_user, order)
-        result = _s.json()
-        logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[result: {result}]")
         _s.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        logger.warning(f"[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]-[err: {e.response.text}]")
+        try:
+            result = _s.json()
+        except:
+            result = {}
+
+        logger.warning(f"[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]-[body: {result}]")
 
         if _s.status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
@@ -167,7 +170,7 @@ def do_instagram_action(insta_user, order):
 
             if message == 'checkpoint_required' and not result.get('lock', True):
                 insta_user.status = insta_user.STATUS_DISABLED
-                # insta_user.clear_session()
+                insta_user.clear_session()
 
             if order['action'] == InstaAction.ACTION_COMMENT and result.get('status', '') == 'fail':
                 insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)

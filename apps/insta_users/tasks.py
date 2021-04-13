@@ -68,7 +68,7 @@ def stop_duplicate_task(func):
 
 
 # @stop_duplicate_task
-@periodic_task(run_every=crontab(minute='*/30'))
+@periodic_task(run_every=crontab(minute='*/10'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
