@@ -4,6 +4,8 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
+from apps.proxies.models import Proxy
+
 
 class InstaAction(object):
     ACTION_LIKE = 'L'
@@ -83,8 +85,9 @@ class InstaUser(models.Model):
         super().save(*args, **kwargs)
 
     def set_proxy(self, session):
-        if self.proxy is not None:
-            session.proxies = {self.proxy.protocol: f'{self.proxy.server}:{self.proxy.port}'}
+        if self.proxy is None:
+            self.proxy_id = Proxy.get_proxy()
+        session.proxies = {self.proxy.protocol: f'{self.proxy.server}:{self.proxy.port}'}
 
     def clear_session(self):
         self.session = ''
@@ -95,7 +98,9 @@ class InstaUser(models.Model):
 
     @property
     def get_session(self):
-        return dict([tuple(i.strip().split('=')) for i in self.session.split(';')])
+        if self.session:
+            return dict([tuple(i.strip().split('=')) for i in self.session.split(';')])
+        return dict()
 
     def set_blocked(self, action, block_type):
         block_count = min(self.blocked_data.get(action, {}).get('count', 0) + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])

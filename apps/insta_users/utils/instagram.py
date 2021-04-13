@@ -5,9 +5,8 @@ from json.decoder import JSONDecodeError
 
 from datetime import datetime
 
-from fake_useragent import UserAgent
+# from fake_useragent import UserAgent
 
-from apps.proxies.models import Proxy
 from apps.insta_users.models import InstaAction
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 
-ua = UserAgent()
+# ua = UserAgent()
 
 
 class InstagramMediaClosed(Exception):
@@ -34,7 +33,6 @@ def instagram_login(insta_user, commit=True):
 
     resp = session.get(INSTAGRAM_BASE_URL)
     session.headers.update({'X-CSRFToken': resp.cookies['csrftoken']})
-    insta_user.proxy_id = Proxy.get_proxy()
     insta_user.set_proxy(session)
 
     login_data = {'username': insta_user.username, 'enc_password': f'#PWD_INSTAGRAM_BROWSER:0:{datetime.now().timestamp()}:{insta_user.password}'}
@@ -43,19 +41,24 @@ def instagram_login(insta_user, commit=True):
 
     try:
         res = login_resp.json()
-        status = res.get('status')
+        status = res.get('status', '')
         is_auth = res.get('authenticated', False)
+        message = res.get('message', '')
 
         if status == 'fail':
+            logger.warning(f"[Instagram Login]-[failed for {insta_user.username}]-[res: {res}]")
             insta_user.status = insta_user.STATUS_LOGIN_LIMIT
+            if message == 'checkpoint_required':
+                insta_user.status = insta_user.STATUS_DISABLED
         elif is_auth:
             insta_user.status = insta_user.STATUS_ACTIVE
-            session.cookies.set('user-agent', user_agent.replace(';', '-'))
+            # session.cookies.set('user-agent', user_agent.replace(';', '-'))
             insta_user.set_session(session.cookies.get_dict())
             insta_user.user_id = session.cookies['ds_user_id']
             logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
         else:
             insta_user.status = insta_user.STATUS_LOGIN_FAILED
+            logger.warning(f"[Instagram Login]-[failed for {insta_user.username}]-[res: {res}]")
 
     except Exception as e:
         logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[result: {login_resp.text}]')
@@ -68,14 +71,14 @@ def instagram_login(insta_user, commit=True):
 def get_instagram_session(insta_user):
     session = requests.session()
     user_session = insta_user.get_session
-    user_agent = user_session.pop('user-agent', '')
-    if user_agent:
-        session.headers.update({
-            'user-agent': user_agent,
-        })
+    # user_agent = user_session.pop('user-agent', '')
+    # if user_agent:
+    #     session.headers.update({
+    #         'user-agent': user_agent,
+    #     })
     session.headers.update({
         'X-CSRFToken': user_session['csrftoken'],
-        'X-Instagram-AJAX': '7e64493c83ae'
+        'X-Instagram-AJAX': '7e64493c83ae',
     })
     session.cookies.update(user_session)
     insta_user.set_proxy(session)
@@ -164,7 +167,7 @@ def do_instagram_action(insta_user, order):
 
             if message == 'checkpoint_required' and not result.get('lock', True):
                 insta_user.status = insta_user.STATUS_DISABLED
-                insta_user.clear_session()
+                # insta_user.clear_session()
 
             if order['action'] == InstaAction.ACTION_COMMENT and result.get('status', '') == 'fail':
                 insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)
@@ -177,8 +180,6 @@ def do_instagram_action(insta_user, order):
         proxy = insta_user.proxy
         proxy.is_enable = False
         proxy.save()
-        insta_user.clear_session()
-        insta_user.save()
         raise
 
     except InstagramMediaClosed as e:

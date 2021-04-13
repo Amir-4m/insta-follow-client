@@ -6,6 +6,7 @@ import random
 from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import Q
 
 from celery.schedules import crontab
 from celery.task import periodic_task
@@ -67,7 +68,7 @@ def stop_duplicate_task(func):
 
 
 # @stop_duplicate_task
-@periodic_task(run_every=crontab(minute='*'))
+@periodic_task(run_every=crontab(minute='*/30'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
@@ -146,10 +147,8 @@ def reactivate_blocked_users():
         insta_follow_login_task.delay(insta_user_id)
 
     InstaUser.objects.filter(
-        status=InstaUser.STATUS_DISABLED,
-        updated_time__lt=timezone.now() - timezone.timedelta(days=3)
+        Q(status=InstaUser.STATUS_DISABLED, updated_time__lt=timezone.now() - timezone.timedelta(days=3)) |
+        Q(status=InstaUser.STATUS_LOGIN_LIMIT, updated_time__lt=timezone.now() - timezone.timedelta(hours=3))
     ).update(
         status=InstaUser.STATUS_ACTIVE,
-        session='',
-        proxy=None
     )
