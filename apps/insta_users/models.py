@@ -75,6 +75,10 @@ class InstaUser(models.Model):
     def __str__(self):
         return self.username
 
+    def save(self, *args, **kwargs):
+        self.username = self.username.lower()
+        super().save(*args, **kwargs)
+
     def set_proxy(self, session):
         if self.proxy is not None:
             session.proxies = {self.proxy.protocol: f'{self.proxy.server}:{self.proxy.port}'}
@@ -84,7 +88,7 @@ class InstaUser(models.Model):
         self.proxy = None
 
     def set_blocked(self, action, block_type):
-        block_count = self.blocked_data.get(action, {}).get('count', 0) + 1
+        block_count = max(self.blocked_data.get(action, {}).get('count', 0) + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
         self.blocked_data[action] = dict(
             block_time=int(datetime.now().timestamp()),
             block_type=block_type,
@@ -104,9 +108,9 @@ class InstaUser(models.Model):
 
         _data = self.blocked_data[action]
         if _data['block_type'] == InstaAction.BLOCK_TYPE_TEMP:
-            return _data['block_time'] < int((datetime.now() - timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS[f'pre_lock_{action_str}'])).timestamp())
+            return _data['block_time'] > int((datetime.now() - timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS[f'pre_lock_{action_str}'])).timestamp())
 
         if _data['block_type'] == InstaAction.BLOCK_TYPE_SPAM:
-            return _data['block_time'] < int((datetime.now() - timedelta(minutes=_data['count'] * settings.INSTA_FOLLOW_SETTINGS[f'lock_{action_str}'])).timestamp())
+            return _data['block_time'] > int((datetime.now() - timedelta(minutes=_data['count'] * settings.INSTA_FOLLOW_SETTINGS[f'lock_{action_str}'])).timestamp())
 
         return True

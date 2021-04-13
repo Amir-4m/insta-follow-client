@@ -63,7 +63,8 @@ def get_insta_follow_uuid(insta_user):
     params = dict(
         instagram_user_id=insta_user.user_id,
         instagram_username=insta_user.username,
-        session_id=insta_user.session['sessionid']
+        session_id=insta_user.session['sessionid'],
+        user_agent=insta_user.session['user-agent'],
     )
     url = INSTA_FOLLOW_LOGIN_URL
     logger.debug(f"[insta_follow register]-[insta_user: {insta_user.username}]-[params: {params}]")
@@ -102,19 +103,20 @@ def insta_follow_get_orders(insta_user, action):
     return res
 
 
-def insta_follow_order_done(insta_user, order_id, status=True):
+def insta_follow_order_done(insta_user, order_id, check=False):
 
-    logger.debug(f"[insta_follow order done]-[insta_user: {insta_user.username}]-[order: {order_id}]-[status: {status}]")
+    logger.debug(f"[insta_follow order done]-[insta_user: {insta_user.username}]-[order: {order_id}]-[check: {check}]")
 
     url = INSTA_FOLLOW_INQUIRIES
     try:
         headers = dict(Authorization=generate_insta_follow_token(insta_user.server_key))
         _r = requests.post(url, headers=headers, json={
             'order': order_id,
+            'check': check,
             'status': {
-                True: 0,
-                False: 2
-            }.get(status, 0)
+                True: 2,
+                False: 0
+            }.get(check, 0)
         })
         _r.raise_for_status()
     except requests.exceptions.HTTPError as e:

@@ -17,12 +17,17 @@ INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 ua = UserAgent()
 
 
+class InstagramMediaClosed(Exception):
+    pass
+
+
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
+    user_agent = ua.random
     session.headers = {
         'Referer': INSTAGRAM_BASE_URL,
-        'user-agent': ua.random,
+        'user-agent': user_agent,
     }
 
     resp = session.get(INSTAGRAM_BASE_URL)
@@ -39,6 +44,7 @@ def instagram_login(insta_user, commit=True):
         if is_auth:
             insta_user.status = insta_user.STATUS_ACTIVE
             insta_user.session = session.cookies.get_dict()
+            insta_user.session['user-agent'] = user_agent
             insta_user.user_id = session.cookies['ds_user_id']
             logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
         else:
@@ -58,52 +64,75 @@ def instagram_login(insta_user, commit=True):
 
 def get_action_session(insta_user):
     session = requests.session()
-    session.headers.update({'X-CSRFToken': insta_user.session['csrftoken']})
-    session.headers.update({'X-Instagram-AJAX': '7e64493c83ae'})
+    session.headers.update({
+        'user-agent': insta_user.session.pop('user-agent', ''),
+        'X-CSRFToken': insta_user.session['csrftoken'],
+        'X-Instagram-AJAX': '7e64493c83ae'
+    })
     session.cookies.update(insta_user.session)
     insta_user.set_proxy(session)
 
     return session
 
 
-def instagram_like(insta_user, media_id):
+def get_instagram_entity_data(session, order):
+    try:
+        _s = session.get(f"{order['link']}?__a=1")
+        _s.raise_for_status()
+        res = _s.json()
+    except requests.exceptions.HTTPError as e:
+        logger.debug(f"[instagram entity check]-[HTTPError]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]")
+        if e.response.status_code == 404:
+            raise InstagramMediaClosed('Not Found')
+    else:
+        if order['action'] == InstaAction.ACTION_FOLLOW:
+            if res['graphql']['user'].get('is_private', False):
+                raise InstagramMediaClosed('Is Private')
+
+        if order['action'] == InstaAction.ACTION_COMMENT:
+            if res['graphql']['shortcode_media']['comments_disabled']:
+                raise InstagramMediaClosed('Comment Closed')
+
+            # commenting on this entity is disabled for this user
+            # if res['graphql']['shortcode_media']['commenting_disabled_for_viewer']:
+            #     pass
+
+
+def instagram_like(insta_user, order):
     session = get_action_session(insta_user)
-    return session.post(f"https://www.instagram.com/web/likes/{media_id}/like/")
+    get_instagram_entity_data(session, order)
+    return session.post(f"https://www.instagram.com/web/likes/{order['entity_id']}/like/")
 
 
-def instagram_follow(insta_user, target_user):
+def instagram_follow(insta_user, order):
     session = get_action_session(insta_user)
-    return session.post(f"https://www.instagram.com/web/friendships/{target_user}/follow/")
+    get_instagram_entity_data(session, order)
+    return session.post(f"https://www.instagram.com/web/friendships/{order['entity_id']}/follow/")
 
 
-def instagram_comment(insta_user, media_id, comment):
+def instagram_comment(insta_user, order):
     session = get_action_session(insta_user)
+    get_instagram_entity_data(session, order)
     data = {
-        "comment_text": comment,
+        "comment_text": random.choice(order['comments']),
         "replied_to_comment_id": ""
     }
-    return session.post(f"https://www.instagram.com/web/comments/{media_id}/add/", data=data)
+    return session.post(f"https://www.instagram.com/web/comments/{order['entity_id']}/add/", data=data)
 
 
 def do_instagram_action(insta_user, order):
-
-    logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[target: {order['entity_id']}]")
-
-    action = InstaAction.get_action_from_key(order['action'])
+    logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]")
 
     try:
+        action = InstaAction.get_action_from_key(order['action'])
         action_to_call = globals()[f'instagram_{action}']
-        args = (insta_user, order['entity_id'])
-        if order['action'] == InstaAction.ACTION_COMMENT:
-            args += (random.choice(order['comments']),)
-
-        _s = action_to_call(*args)
+        _s = action_to_call(insta_user, order)
         _s.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        log_txt = f'[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {action}]-[status code: {e.response.status_code}]'
+        log_txt = f"[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]"
         if 'json' in _s.headers['content-type']:
-            log_txt += f'-[err: {e.response.text}]'
+            log_txt += f"-[err: {e.response.text}]"
         logger.warning(log_txt)
 
         if _s.status_code == 429:
@@ -124,7 +153,7 @@ def do_instagram_action(insta_user, order):
                 insta_user.clear_session()
 
             if order['action'] == InstaAction.ACTION_COMMENT and result.get('status', '') == 'fail':
-                return False
+                insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)
 
             insta_user.save()
 
@@ -134,12 +163,14 @@ def do_instagram_action(insta_user, order):
         proxy = insta_user.proxy
         proxy.is_enable = False
         proxy.save()
-
         insta_user.clear_session()
         insta_user.save()
-
-    except Exception as e:
-        logger.error(f'[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]')
         raise
 
-    return True
+    except InstagramMediaClosed as e:
+        logger.warning(f"[instagram]-[Media Closed]-[action: {order['action']}]-[order: {order['link']}]-[err: {e}]")
+        raise
+
+    except Exception as e:
+        logger.error(f"[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]")
+        raise

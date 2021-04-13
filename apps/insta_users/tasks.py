@@ -6,8 +6,6 @@ import random
 from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import F, DurationField
-from django.db.models.functions import Cast, Now
 
 from celery.schedules import crontab
 from celery.task import periodic_task
@@ -17,7 +15,7 @@ from pid import PidFile
 
 from .models import InstaUser, InstaAction
 from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
-from .utils.instagram import instagram_login, do_instagram_action
+from .utils.instagram import instagram_login, do_instagram_action, InstagramMediaClosed
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +72,7 @@ def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
 
-        action_selected = random.choice(InstaAction.ACTION_CHOICES[:2])
+        action_selected = random.choice(InstaAction.ACTION_CHOICES)
         action = action_selected[1]
 
         if insta_user.is_blocked(action_selected[0]):
@@ -95,20 +93,22 @@ def insta_user_action():
 
 @shared_task
 def do_orders(insta_user_id, orders, action):
-
     insta_user = InstaUser.objects.select_related('proxy').get(id=insta_user_id)
-    all_done = True
+    all_done = []
     for order in orders:
         try:
-            result = do_instagram_action(insta_user, order)
-        except:
-            all_done = False
+            do_instagram_action(insta_user, order)
+        except InstagramMediaClosed as e:
+            insta_follow_order_done(insta_user, order['id'], check=True)
+        except Exception:
+            all_done.append(False)
             break
         else:
-            insta_follow_order_done(insta_user, order['id'], result)
+            insta_follow_order_done(insta_user, order['id'])
+            all_done.append(True)
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
-    if all_done:
+    if all(all_done):
         insta_user.remove_blocked(action)
 
     cache.delete(INSTA_USER_LOCK_KEY % insta_user_id)
