@@ -64,7 +64,7 @@ def get_insta_follow_uuid(insta_user):
         instagram_user_id=insta_user.user_id,
         instagram_username=insta_user.username,
         session_id=insta_user.session['sessionid'],
-        user_agent=insta_user.session['user-agent'],
+        user_agent=insta_user.session.get('user-agent', ''),
     )
     url = INSTA_FOLLOW_LOGIN_URL
     logger.debug(f"[insta_follow register]-[insta_user: {insta_user.username}]-[params: {params}]")

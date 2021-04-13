@@ -88,7 +88,7 @@ class InstaUser(models.Model):
         self.proxy = None
 
     def set_blocked(self, action, block_type):
-        block_count = max(self.blocked_data.get(action, {}).get('count', 0) + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
+        block_count = min(self.blocked_data.get(action, {}).get('count', 0) + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
         self.blocked_data[action] = dict(
             block_time=int(datetime.now().timestamp()),
             block_type=block_type,

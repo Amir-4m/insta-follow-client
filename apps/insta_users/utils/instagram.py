@@ -1,6 +1,7 @@
 import logging
 import requests
 import random
+from json.decoder import JSONDecodeError
 
 from datetime import datetime
 
@@ -25,6 +26,7 @@ def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
     user_agent = ua.random
+    # user_agent = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
     session.headers = {
         'Referer': INSTAGRAM_BASE_URL,
         'user-agent': user_agent,
@@ -62,10 +64,14 @@ def instagram_login(insta_user, commit=True):
         insta_user.save()
 
 
-def get_action_session(insta_user):
+def get_instagram_session(insta_user):
     session = requests.session()
+    user_agent = insta_user.session.pop('user-agent', '')
+    if user_agent:
+        session.headers.update({
+            'user-agent': user_agent,
+        })
     session.headers.update({
-        'user-agent': insta_user.session.pop('user-agent', ''),
         'X-CSRFToken': insta_user.session['csrftoken'],
         'X-Instagram-AJAX': '7e64493c83ae'
     })
@@ -77,14 +83,11 @@ def get_action_session(insta_user):
 
 def get_instagram_entity_data(session, order):
     try:
-        _s = session.get(f"{order['link']}?__a=1")
+        media_link = f"{order['link']}?__a=1"
+        _s = session.get(media_link)
         _s.raise_for_status()
         res = _s.json()
-    except requests.exceptions.HTTPError as e:
-        logger.debug(f"[instagram entity check]-[HTTPError]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]")
-        if e.response.status_code == 404:
-            raise InstagramMediaClosed('Not Found')
-    else:
+
         if order['action'] == InstaAction.ACTION_FOLLOW:
             if res['graphql']['user'].get('is_private', False):
                 raise InstagramMediaClosed('Is Private')
@@ -97,21 +100,32 @@ def get_instagram_entity_data(session, order):
             # if res['graphql']['shortcode_media']['commenting_disabled_for_viewer']:
             #     pass
 
+    except requests.exceptions.HTTPError as e:
+        logger.debug(f"[instagram entity check]-[HTTPError]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]")
+        if e.response.status_code == 404:
+            raise InstagramMediaClosed('Not Found')
+
+    except JSONDecodeError:
+        logger.error(f"[instagram entity check]-[JSONDecodeError]-[action: {order['action']}]-[order: {order['id']}]-[url: {media_link}]")
+
+    except KeyError:
+        logger.error(f"[instagram entity check]-[KeyError]-[action: {order['action']}]-[order: {order['id']}]-[res: {res}]")
+
 
 def instagram_like(insta_user, order):
-    session = get_action_session(insta_user)
+    session = get_instagram_session(insta_user)
     get_instagram_entity_data(session, order)
     return session.post(f"https://www.instagram.com/web/likes/{order['entity_id']}/like/")
 
 
 def instagram_follow(insta_user, order):
-    session = get_action_session(insta_user)
+    session = get_instagram_session(insta_user)
     get_instagram_entity_data(session, order)
     return session.post(f"https://www.instagram.com/web/friendships/{order['entity_id']}/follow/")
 
 
 def instagram_comment(insta_user, order):
-    session = get_action_session(insta_user)
+    session = get_instagram_session(insta_user)
     get_instagram_entity_data(session, order)
     data = {
         "comment_text": random.choice(order['comments']),

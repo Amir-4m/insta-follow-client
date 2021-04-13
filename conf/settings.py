@@ -221,7 +221,7 @@ INSTA_FOLLOW_SETTINGS = {
     "lock_follow": 120,
 
     "pre_lock_like": 5,
-    "pre_lock_follow": 5,
+    "pre_lock_follow": 10,
     "pre_lock_comment": 5,
 
     "max_lock": 10,
