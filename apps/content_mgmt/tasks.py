@@ -43,8 +43,8 @@ def post_pic(insta_user):
         'Referer': 'https://www.instagram.com/create/crop/',
     }
     session.headers.update(headers)
-    s1 = session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
-                      data=open(f'{settings.MEDIA_ROOT}/{content.image}', "rb"))
+    session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
+                 data=open(f'{settings.MEDIA_ROOT}/{content.image}', "rb"))
 
     body = {
         'upload_id': f'{microtime}',
