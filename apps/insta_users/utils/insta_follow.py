@@ -60,11 +60,12 @@ def generate_insta_follow_token(insta_user_server_key):
 
 
 def get_insta_follow_uuid(insta_user):
+    user_session = insta_user.get_session
     params = dict(
         instagram_user_id=insta_user.user_id,
         instagram_username=insta_user.username,
-        session_id=insta_user.session['sessionid'],
-        user_agent=insta_user.session.get('user-agent', ''),
+        session_id=user_session['sessionid'],
+        user_agent=user_session.get('user-agent', ''),
     )
     url = INSTA_FOLLOW_LOGIN_URL
     logger.debug(f"[insta_follow register]-[insta_user: {insta_user.username}]-[params: {params}]")

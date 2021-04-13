@@ -25,8 +25,8 @@ class InstagramMediaClosed(Exception):
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
-    user_agent = ua.random
-    # user_agent = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
+    # user_agent = ua.random
+    user_agent = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
     session.headers = {
         'Referer': INSTAGRAM_BASE_URL,
         'user-agent': user_agent,
@@ -45,8 +45,8 @@ def instagram_login(insta_user, commit=True):
         is_auth = login_resp.json()['authenticated']
         if is_auth:
             insta_user.status = insta_user.STATUS_ACTIVE
-            insta_user.session = session.cookies.get_dict()
-            insta_user.session['user-agent'] = user_agent
+            session.cookies.set('user-agent', user_agent.replace(';', '-'))
+            insta_user.set_session(session.cookies.get_dict())
             insta_user.user_id = session.cookies['ds_user_id']
             logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
         else:
@@ -66,16 +66,17 @@ def instagram_login(insta_user, commit=True):
 
 def get_instagram_session(insta_user):
     session = requests.session()
-    user_agent = insta_user.session.pop('user-agent', '')
+    user_session = insta_user.get_session
+    user_agent = user_session.pop('user-agent', '')
     if user_agent:
         session.headers.update({
             'user-agent': user_agent,
         })
     session.headers.update({
-        'X-CSRFToken': insta_user.session['csrftoken'],
+        'X-CSRFToken': user_session['csrftoken'],
         'X-Instagram-AJAX': '7e64493c83ae'
     })
-    session.cookies.update(insta_user.session)
+    session.cookies.update(user_session)
     insta_user.set_proxy(session)
 
     return session

@@ -131,7 +131,7 @@ def instagram_login_task(insta_user_id):
 def reactivate_blocked_users():
     no_session_users = InstaUser.objects.filter(
         status=InstaUser.STATUS_ACTIVE,
-        session__isnull=True,
+        session='',
     ).values_list('id', flat=True)
 
     for insta_user_id in no_session_users:
@@ -139,9 +139,8 @@ def reactivate_blocked_users():
 
     no_uuid_users = InstaUser.objects.filter(
         status=InstaUser.STATUS_ACTIVE,
-        session__isnull=False,
         server_key__isnull=True,
-    ).values_list('id', flat=True)
+    ).exclude(session='').values_list('id', flat=True)
 
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
@@ -151,5 +150,5 @@ def reactivate_blocked_users():
         updated_time__lt=timezone.now() - timezone.timedelta(days=3)
     ).update(
         status=InstaUser.STATUS_ACTIVE,
-        session=None
+        session=''
     )

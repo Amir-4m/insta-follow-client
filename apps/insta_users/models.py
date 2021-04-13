@@ -30,9 +30,10 @@ class LiveManager(models.Manager):
 
     def live(self):
         return super().get_queryset().filter(
-            session__isnull=False,
-            server_key__isnull=False,
             status=InstaUser.STATUS_ACTIVE,
+            server_key__isnull=False,
+        ).exclude(
+            session='',
         )
 
 
@@ -57,7 +58,7 @@ class InstaUser(models.Model):
     username = models.CharField(_("username"), max_length=64)
     password = models.CharField(_("password"), max_length=128)
     user_id = models.PositiveBigIntegerField(_("user ID"), unique=True, blank=True, null=True)
-    session = models.JSONField(_("session"), blank=True, null=True)
+    session = models.TextField(_("session"), blank=True)
     proxy = models.ForeignKey('proxies.Proxy', on_delete=models.SET_NULL, null=True, blank=True, related_name='insta_users')
 
     server_key = models.UUIDField(_('server Key'), blank=True, null=True, help_text=_('insta follow server key'))
@@ -84,8 +85,15 @@ class InstaUser(models.Model):
             session.proxies = {self.proxy.protocol: f'{self.proxy.server}:{self.proxy.port}'}
 
     def clear_session(self):
-        self.session = None
+        self.session = ''
         self.proxy = None
+
+    def set_session(self, cookie_dict):
+        self.session = "; ".join([str(x) + "=" + str(y) for x, y in cookie_dict.items()])
+
+    @property
+    def get_session(self):
+        return dict([tuple(i.strip().split('=')) for i in self.session.split(';')])
 
     def set_blocked(self, action, block_type):
         block_count = min(self.blocked_data.get(action, {}).get('count', 0) + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
