@@ -14,9 +14,7 @@ from conf import settings
 def change_profile_pic(insta_user):
     session = get_action_session(insta_user)
 
-    contents = ImageContent.objects.all()
-    image_id = random.randint(1, len(contents))
-    content = ImageContent.objects.get(id=image_id)
+    content = ImageContent.objects.order_by('?')[0]
 
     files = {'profile_pic': open(f'{settings.MEDIA_ROOT}/{content.image}', 'rb')}
     values = {"Content-Disposition": "form-data", "name": "profile_pic", "filename": "profilepic.jpg",
@@ -29,13 +27,9 @@ def change_profile_pic(insta_user):
 def post_pic(insta_user):
     session = get_action_session(insta_user)
 
-    contents = ImageContent.objects.all()
-    image_id = random.randint(1, len(contents))
-    content = ImageContent.objects.get(id=image_id)
+    content = ImageContent.objects.order_by('?')[0]
 
-    captions = CaptionContent.objects.all()
-    caption_id = random.randint(1, len(captions))
-    caption = CaptionContent.objects.get(id=caption_id)
+    caption = CaptionContent.objects.order_by('?')[0]
 
     microtime = int(datetime.now().timestamp())
     pic_size = os.path.getsize(f'{settings.MEDIA_ROOT}/{content.image}')
@@ -51,7 +45,6 @@ def post_pic(insta_user):
     session.headers.update(headers)
     s1 = session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
                       data=open(f'{settings.MEDIA_ROOT}/{content.image}', "rb"))
-    print(s1.text)
 
     body = {
         'upload_id': f'{microtime}',

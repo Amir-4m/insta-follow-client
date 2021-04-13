@@ -26,7 +26,6 @@ class ImageContent(models.Model):
 class VideoContent(models.Model):
     created_time = models.DateTimeField(_('created time'), auto_now_add=True)
     updated_time = models.DateTimeField(_('updated time'), auto_now=True)
-    title = models.CharField(_('title'), max_length=64)
     video = models.FileField(_('video'), upload_to='videos')
 
     categories = models.ManyToManyField(Category, related_name='videos')
