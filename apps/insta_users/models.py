@@ -44,12 +44,14 @@ class InstaUser(models.Model):
     STATUS_REMOVED = 30
     STATUS_DISABLED = 31
     STATUS_LOGIN_FAILED = 40
+    STATUS_LOGIN_LIMIT = 41
 
     STATUS_CHOICES = (
         (STATUS_ACTIVE, _("active")),
         (STATUS_REMOVED, _("removed")),
         (STATUS_DISABLED, _("disabled")),
         (STATUS_LOGIN_FAILED, _("login failed")),
+        (STATUS_LOGIN_LIMIT, _("login limited")),
     )
 
     created_time = models.DateTimeField(_('created time'), auto_now_add=True)

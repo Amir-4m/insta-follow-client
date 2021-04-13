@@ -42,8 +42,13 @@ def instagram_login(insta_user, commit=True):
     session.headers.update({'X-CSRFToken': resp.cookies['csrftoken']})
 
     try:
-        is_auth = login_resp.json()['authenticated']
-        if is_auth:
+        res = login_resp.json()
+        status = res.get('status')
+        is_auth = res.get('authenticated', False)
+
+        if status == 'fail':
+            insta_user.status = insta_user.STATUS_LOGIN_LIMIT
+        elif is_auth:
             insta_user.status = insta_user.STATUS_ACTIVE
             session.cookies.set('user-agent', user_agent.replace(';', '-'))
             insta_user.set_session(session.cookies.get_dict())
@@ -52,13 +57,9 @@ def instagram_login(insta_user, commit=True):
         else:
             insta_user.status = insta_user.STATUS_LOGIN_FAILED
 
-    except KeyError:
-        logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[result: {login_resp.json()}]')
-        insta_user.status = insta_user.STATUS_DISABLED
-
     except Exception as e:
         logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[result: {login_resp.text}]')
-        insta_user.status = insta_user.STATUS_LOGIN_FAILED
+        insta_user.status = insta_user.STATUS_DISABLED
 
     if commit:
         insta_user.save()
@@ -142,20 +143,18 @@ def do_instagram_action(insta_user, order):
         action = InstaAction.get_action_from_key(order['action'])
         action_to_call = globals()[f'instagram_{action}']
         _s = action_to_call(insta_user, order)
+        result = _s.json()
+        logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[result: {result}]")
         _s.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        log_txt = f"[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]"
-        if 'json' in _s.headers['content-type']:
-            log_txt += f"-[err: {e.response.text}]"
-        logger.warning(log_txt)
+        logger.warning(f"[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]-[err: {e.response.text}]")
 
         if _s.status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
             insta_user.save()
 
         elif _s.status_code == 400:
-            result = _s.json()
             message = result.get('message', '')
 
             if message == 'feedback_required' and result.get('spam', False):

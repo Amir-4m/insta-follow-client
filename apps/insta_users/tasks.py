@@ -150,5 +150,6 @@ def reactivate_blocked_users():
         updated_time__lt=timezone.now() - timezone.timedelta(days=3)
     ).update(
         status=InstaUser.STATUS_ACTIVE,
-        session=''
+        session='',
+        proxy=None
     )
