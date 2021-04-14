@@ -1,12 +1,12 @@
 import logging
 import os
 import time
+import random
 
 from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import F, DurationField
-from django.db.models.functions import Cast, Now
+from django.db.models import Q
 
 from celery.schedules import crontab
 from celery.task import periodic_task
@@ -16,7 +16,7 @@ from pid import PidFile
 
 from .models import InstaUser, InstaAction
 from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
-from .utils.instagram import instagram_login, do_instagram_action
+from .utils.instagram import instagram_login, do_instagram_action, InstagramMediaClosed
 
 logger = logging.getLogger(__name__)
 
@@ -68,40 +68,49 @@ def stop_duplicate_task(func):
 
 
 # @stop_duplicate_task
-@periodic_task(run_every=crontab(minute='*'))
+@periodic_task(run_every=crontab(minute='*/10'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
 
-        _ck = INSTA_USER_LOCK_KEY % insta_user.id
-        if cache.get(_ck):
-            logger.debug(f'skipping insta_user: {insta_user.username}')
+        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-1])
+        action = action_selected[1]
+
+        if insta_user.is_blocked(action_selected[0]):
+            logger.debug(f'skipping insta_user: {insta_user.username}, action {action} blocked')
             continue
 
-        action = InstaAction.get_action_from_key(InstaAction.ACTION_FOLLOW)
+        _ck = INSTA_USER_LOCK_KEY % insta_user.id
+        if cache.get(_ck):
+            logger.debug(f'skipping insta_user: {insta_user.username}, action {action} cache locked')
+            continue
+
         orders = insta_follow_get_orders(insta_user, action)
         logger.debug(f'retrieved {len(orders)} - {[o["id"] for o in orders]} - for user: {insta_user.username}')
 
         cache.set(_ck, True, 300)
-        do_orders.delay(insta_user.id, orders)
+        do_orders.delay(insta_user.id, orders, action)
 
 
 @shared_task
-def do_orders(insta_user_id, orders):
-
+def do_orders(insta_user_id, orders, action):
     insta_user = InstaUser.objects.select_related('proxy').get(id=insta_user_id)
-    if insta_user.status != insta_user.STATUS_ACTIVE:
-        logger.debug(f'insta_user: {insta_user.username} is not active!')
-        return
-
+    all_done = []
     for order in orders:
         try:
             do_instagram_action(insta_user, order)
-        except:
+        except InstagramMediaClosed as e:
+            insta_follow_order_done(insta_user, order['id'], check=True)
+        except Exception:
+            all_done.append(False)
             break
         else:
             insta_follow_order_done(insta_user, order['id'])
-        time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{InstaAction.get_action_from_key(order['action'])}"])
+            all_done.append(True)
+        time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
+
+    if all(all_done):
+        insta_user.remove_blocked(action)
 
     cache.delete(INSTA_USER_LOCK_KEY % insta_user_id)
 
@@ -119,26 +128,27 @@ def instagram_login_task(insta_user_id):
     instagram_login(insta_user)
 
 
-@periodic_task(run_every=crontab(minute='*/10'))
+@periodic_task(run_every=crontab(minute='*'))
 def reactivate_blocked_users():
-    reactivated = 0
+    no_session_users = InstaUser.objects.filter(
+        status=InstaUser.STATUS_ACTIVE,
+        session='',
+    ).values_list('id', flat=True)
 
-    reactivated += InstaUser.objects.filter(
-        status=InstaUser.STATUS_BLOCKED_TEMP,
-        updated_time__lt=timezone.now() - timezone.timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS['pre_lock_time'])
+    for insta_user_id in no_session_users:
+        instagram_login_task.delay(insta_user_id)
+
+    no_uuid_users = InstaUser.objects.filter(
+        status=InstaUser.STATUS_ACTIVE,
+        server_key__isnull=True,
+    ).exclude(session='').values_list('id', flat=True)
+
+    for insta_user_id in no_uuid_users:
+        insta_follow_login_task.delay(insta_user_id)
+
+    InstaUser.objects.filter(
+        Q(status=InstaUser.STATUS_DISABLED, updated_time__lt=timezone.now() - timezone.timedelta(days=3)) |
+        Q(status=InstaUser.STATUS_LOGIN_LIMIT, updated_time__lt=timezone.now() - timezone.timedelta(hours=3))
     ).update(
-        status=InstaUser.STATUS_ACTIVE
+        status=InstaUser.STATUS_ACTIVE,
     )
-
-    reactivated += InstaUser.objects.filter(
-        status=InstaUser.STATUS_BLOCKED,
-    ).annotate(
-        passed_time=Cast(Now() - F('updated_time'), output_field=DurationField()),
-        waiting_time=Cast(F('block_count') * timezone.timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS['lock_time']), output_field=DurationField())
-    ).filter(
-        passed_time__gt=F('waiting_time')
-    ).update(
-        status=InstaUser.STATUS_ACTIVE
-    )
-
-    return reactivated
