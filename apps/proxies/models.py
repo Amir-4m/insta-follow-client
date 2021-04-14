@@ -4,8 +4,8 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class Proxy(models.Model):
-    PROTOCOL_HTTP = 1
-    PROTOCOL_HTTPS = 2
+    PROTOCOL_HTTP = 'http'
+    PROTOCOL_HTTPS = 'https'
     PROTOCOL_CHOICES = (
         (PROTOCOL_HTTP, _('HTTP')),
         (PROTOCOL_HTTPS, _('HTTPS')),

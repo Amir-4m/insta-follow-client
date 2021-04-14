@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 import random
 
@@ -11,8 +10,6 @@ from django.db.models import Q
 from celery.schedules import crontab
 from celery.task import periodic_task
 from celery import shared_task
-
-from pid import PidFile
 
 from .models import InstaUser, InstaAction
 from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
@@ -37,38 +34,13 @@ INSTAGRAM_HEADERS = {
 }
 """
 
-
-def check_running(function_name):
-    if not os.path.exists('/tmp'):
-        os.mkdir('/tmp')
-    file_lock = PidFile(str(function_name), piddir='/tmp')
-    file_lock.create()
-    return file_lock
-
-
-def stop_duplicate_task(func):
-    def inner_function():
-        try:
-            file_lock = check_running(func.__name__)
-        except:
-            logger.error(f"[Another {func.__name__} is already running]")
-            return
-
-        func()
-
-        if file_lock:
-            file_lock.close()
-
-    return inner_function
-
-
 # @periodic_task(run_every=crontab(minute='*/5'))
 # def p_insta_user_action():
 #     insta_user_action()
 
 
 # @stop_duplicate_task
-@periodic_task(run_every=crontab(minute='*/10'))
+@periodic_task(run_every=crontab(minute='*'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
@@ -132,7 +104,7 @@ def instagram_login_task(insta_user_id):
 @periodic_task(run_every=crontab(minute='*'))
 def activate_insta_users():
     no_session_users = InstaUser.objects.filter(
-        status=InstaUser.STATUS_ACTIVE,
+        Q(status=InstaUser.STATUS_ACTIVE) | Q(status=InstaUser.STATUS_NEW),
         session='',
     ).values_list('id', flat=True)
 
@@ -147,18 +119,26 @@ def activate_insta_users():
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
 
+    # TODO: uncomment
+    # InstaUser.objects.filter(
+    #     status=InstaUser.STATUS_NEW,
+    #     created_time__lt=timezone.now() - timezone.timedelta(days=1)
+    # ).update(
+    #     status=InstaUser.STATUS_ACTIVE
+    # )
+
 
 @periodic_task(run_every=crontab(minute='*/15'))
-def reativate_disabled_insta_users():
+def reactivate_disabled_insta_users():
     return InstaUser.objects.filter(
         Q(status=InstaUser.STATUS_DISABLED, updated_time__lt=timezone.now() - timezone.timedelta(days=3)) |
         Q(status=InstaUser.STATUS_LOGIN_LIMIT, updated_time__lt=timezone.now() - timezone.timedelta(hours=3))
     ).update(
-        status=InstaUser.STATUS_ACTIVE,
+        status=InstaUser.STATUS_ACTIVE
     )
 
 
-@periodic_task(run_every=crontab(minute='0', hour=0))
+@periodic_task(run_every=crontab(minute='0', hour='0'))
 def cleanup_disabled_insta_users():
     insta_users = InstaUser.objects.filter(
         Q(status=InstaUser.STATUS_DISABLED) | Q(status=InstaUser.STATUS_LOGIN_FAILED),

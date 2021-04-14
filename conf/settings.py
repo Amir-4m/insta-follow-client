@@ -35,7 +35,8 @@ INSTALLED_APPS = [
     # Local
     'apps.insta_users',
     'apps.proxies',
-    'apps.content_mgmt',
+    'apps.simulators',
+    # 'apps.content_mgmt',
 
     # Third Parties
 

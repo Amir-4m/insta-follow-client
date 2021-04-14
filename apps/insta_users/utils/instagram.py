@@ -5,13 +5,15 @@ from json.decoder import JSONDecodeError
 
 from datetime import datetime
 
-# from fake_useragent import UserAgent
+from fake_useragent import UserAgent
 
 from apps.insta_users.models import InstaAction
+from apps.proxies.models import Proxy
 
 logger = logging.getLogger(__name__)
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
+INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 # INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 # DEVICE_SETTINGS = {
 #     'manufacturer': 'Xiaomi',
@@ -20,9 +22,9 @@ INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 #     'android_release': '4.3'
 # }
 # USER_AGENT = f'Instagram 10.26.0 Android ({android_version}/{android_release}; 320dpi; 720x1280; {manufacturer}; {model}; armani; qcom; en_US)'
-INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
+# INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
 
-# ua = UserAgent()
+ua = UserAgent()
 
 
 class InstagramMediaClosed(Exception):
@@ -32,8 +34,8 @@ class InstagramMediaClosed(Exception):
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
-    user_agent = INSTAGRAM_USER_AGENT
-    # user_agent = ua.random
+    # user_agent = INSTAGRAM_USER_AGENT
+    user_agent = ua.random
     session.headers = {
         'referer': INSTAGRAM_BASE_URL,
         'user-agent': user_agent,
@@ -66,7 +68,7 @@ def instagram_login(insta_user, commit=True):
                 insta_user.status = insta_user.STATUS_DISABLED
         elif is_auth:
             # insta_user.status = insta_user.STATUS_ACTIVE
-            # session.cookies.set('user-agent', user_agent.replace(';', '-'))
+            session.cookies.set('user-agent', user_agent.replace(';', '-'))
             insta_user.set_session(session.cookies.get_dict())
             insta_user.user_id = session.cookies['ds_user_id']
             logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
@@ -75,11 +77,11 @@ def instagram_login(insta_user, commit=True):
             logger.warning(f"[Instagram Login]-[failed for {insta_user.username}]-[res: {result}]")
 
     except requests.exceptions.HTTPError as e:
-        logger.warning(f"[Instagram Login]-[HTTPError]-[insta_user: {insta_user.username}]-[status code: {e.response.status_code}]-[body: {result}]")
+        logger.warning(f"[Instagram Login]-[HTTPError]-[Insta_user: {insta_user.username}]-[status code: {e.response.status_code}]-[body: {result}]")
         insta_user.status = insta_user.STATUS_LOGIN_FAILED
 
     except Exception as e:
-        logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[result: {login_resp.text}]')
+        logger.warning(f'[Instagram Login]-[Insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[result: {login_resp.text}]')
         insta_user.status = insta_user.STATUS_DISABLED
 
     if commit:
@@ -89,11 +91,11 @@ def instagram_login(insta_user, commit=True):
 def get_instagram_session(insta_user):
     session = requests.session()
     user_session = insta_user.get_session
-    # user_agent = user_session.pop('user-agent', '')
-    # if user_agent:
-    #     session.headers.update({
-    #         'user-agent': user_agent,
-    #     })
+    user_agent = user_session.pop('user-agent', '')
+    if user_agent:
+        session.headers.update({
+            'user-agent': user_agent,
+        })
     session.headers.update({
         'X-CSRFToken': user_session['csrftoken'],
         'X-Instagram-AJAX': '7e64493c83ae',
@@ -104,7 +106,7 @@ def get_instagram_session(insta_user):
     return session
 
 
-def get_instagram_entity_data(session, order):
+def check_instagram_entity(session, order):
     try:
         media_link = f"{order['link']}?__a=1"
         _s = session.get(media_link)
@@ -124,48 +126,63 @@ def get_instagram_entity_data(session, order):
             #     pass
 
     except requests.exceptions.HTTPError as e:
-        logger.debug(f"[instagram entity check]-[HTTPError]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]")
+        logger.debug(f"[Instagram entity check]-[HTTPError]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]")
         if e.response.status_code == 404:
             raise InstagramMediaClosed('Not Found')
         if e.response.status_code == 429:
             raise
 
     except JSONDecodeError:
-        logger.error(f"[instagram entity check]-[JSONDecodeError]-[action: {order['action']}]-[order: {order['id']}]-[url: {media_link}]")
+        logger.error(f"[Instagram entity check]-[JSONDecodeError]-[action: {order['action']}]-[order: {order['id']}]-[url: {media_link}]")
 
-    except KeyError:
-        logger.error(f"[instagram entity check]-[KeyError]-[action: {order['action']}]-[order: {order['id']}]-[res: {res}]")
+    except KeyError as e:
+        logger.error(f"[Instagram entity check]-[KeyError]-[action: {order['action']}]-[order: {order['id']}]-[err: {e}]")
 
 
-def instagram_like(insta_user, order):
+def get_instagram_suggested_follows(insta_user):
     session = get_instagram_session(insta_user)
-    get_instagram_entity_data(session, order)
-    return session.post(f"{INSTAGRAM_BASE_URL}/web/likes/{order['entity_id']}/like/")
+
+    params = dict(
+        query_hash='ed2e3ff5ae8b96717476b62ef06ed8cc',
+        variables='{"fetch_suggested_count": 30, "include_media": false}'
+    )
+    try:
+        resp = session.get(f"{INSTAGRAM_BASE_URL}/graphql/query/", params=params)
+        result = resp.json()['data']['user']['edge_suggested_users']['edges']
+    except:
+        result = []
+
+    return result
 
 
-def instagram_follow(insta_user, order):
-    session = get_instagram_session(insta_user)
-    get_instagram_entity_data(session, order)
-    return session.post(f"{INSTAGRAM_BASE_URL}/web/friendships/{order['entity_id']}/follow/")
+def do_instagram_like(session, entity_id):
+    return session.post(f"{INSTAGRAM_BASE_URL}/web/likes/{entity_id}/like/")
 
 
-def instagram_comment(insta_user, order):
-    session = get_instagram_session(insta_user)
-    get_instagram_entity_data(session, order)
+def do_instagram_follow(session, entity_id):
+    return session.post(f"{INSTAGRAM_BASE_URL}/web/friendships/{entity_id}/follow/")
+
+
+def do_instagram_comment(session, entity_id, comment):
     data = {
-        "comment_text": random.choice(order['comments']),
+        "comment_text": comment,
         "replied_to_comment_id": ""
     }
-    return session.post(f"{INSTAGRAM_BASE_URL}/web/comments/{order['entity_id']}/add/", data=data)
+    return session.post(f"{INSTAGRAM_BASE_URL}/web/comments/{entity_id}/add/", data=data)
 
 
 def do_instagram_action(insta_user, order):
-    logger.debug(f"[instagram]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]")
+    logger.debug(f"[Instagram]-[Insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]")
 
     try:
+        session = get_instagram_session(insta_user)
+        check_instagram_entity(session, order)
         action = InstaAction.get_action_from_key(order['action'])
-        action_to_call = globals()[f'instagram_{action}']
-        _s = action_to_call(insta_user, order)
+        action_to_call = globals()[f'do_instagram_{action}']
+        args = (session, order['entity_id'])
+        if order['action'] == InstaAction.ACTION_COMMENT:
+            args += (random.choice(order['comments']), )
+        _s = action_to_call(*args)
         _s.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
@@ -174,10 +191,11 @@ def do_instagram_action(insta_user, order):
         except:
             result = {}
 
-        logger.warning(f"[instagram]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]-[body: {result}]")
+        logger.warning(f"[Instagram do action]-[HTTPError]-[Insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]-[body: {result}]")
 
         if _s.status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
+            insta_user.proxy_id = Proxy.get_proxy()
             insta_user.save()
 
         elif _s.status_code == 400:
@@ -210,9 +228,9 @@ def do_instagram_action(insta_user, order):
         raise
 
     except InstagramMediaClosed as e:
-        logger.warning(f"[instagram]-[Media Closed]-[action: {order['action']}]-[order: {order['link']}]-[err: {e}]")
+        logger.warning(f"[Instagram do action]-[Media Closed]-[action: {order['action']}]-[order: {order['link']}]-[err: {e}]")
         raise
 
     except Exception as e:
-        logger.error(f"[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]")
+        logger.error(f"[Instagram do action]-[{type(e)}]-[Insta_user: {insta_user.username}]-[err: {e}]")
         raise

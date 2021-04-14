@@ -1,5 +1,5 @@
-from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
 
 from .models import InstaUser
 
@@ -18,6 +18,9 @@ class InstaUserAdmin(admin.ModelAdmin):
         return ', '.join(obj.blocked_data.keys())
 
     @admin.action(description=_('Mark selected as Active.'))
-    def make_instauser_active(self, request, queryset):
+    def make_active(self, request, queryset):
         queryset.update(status=InstaUser.STATUS_ACTIVE)
 
+    @admin.action(description=_('Mark selected as Disabled.'))
+    def make_disable(self, request, queryset):
+        queryset.update(status=InstaUser.STATUS_DISABLED)
