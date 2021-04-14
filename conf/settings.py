@@ -35,9 +35,10 @@ INSTALLED_APPS = [
     # Local
     'apps.insta_users',
     'apps.proxies',
+    'apps.content_mgmt',
 
     # Third Parties
-    
+
     # Default
     'django.contrib.admin',
     'django.contrib.auth',
@@ -226,3 +227,6 @@ INSTA_FOLLOW_SETTINGS = {
 
     "max_lock": 10,
 }
+
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = config('MEDIA_URL', default='/media/')
