@@ -212,17 +212,17 @@ INSTA_FOLLOW_BASE_URL = config('INSTA_FOLLOW_BASE_URL')
 INSTA_FOLLOW_ORDER_LIMIT = config('INSTA_FOLLOW_ORDER_LIMIT', cast=int, default=5)
 
 INSTA_FOLLOW_SETTINGS = {
-    "delay_like": 3,
     "delay_follow": 10,
-    "delay_comment": 5,
+    "delay_like": 5,
+    "delay_comment": 7,
 
-    "lock_like": 30,
+    "lock_follow": 240,
+    "lock_like": 60,
     "lock_comment": 30,
-    "lock_follow": 120,
 
-    "pre_lock_like": 5,
-    "pre_lock_follow": 10,
-    "pre_lock_comment": 5,
+    "pre_lock_follow": 15,
+    "pre_lock_like": 10,
+    "pre_lock_comment": 10,
 
     "max_lock": 10,
 }

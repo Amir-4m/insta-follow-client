@@ -60,7 +60,7 @@ class InstaUser(models.Model):
     created_time = models.DateTimeField(_('created time'), auto_now_add=True)
     updated_time = models.DateTimeField(_('updated time'), auto_now=True)
 
-    username = models.CharField(_("username"), max_length=64)
+    username = models.CharField(_("username"), max_length=64, unique=True)
     password = models.CharField(_("password"), max_length=128)
     user_id = models.PositiveBigIntegerField(_("user ID"), unique=True, blank=True, null=True)
     session = models.TextField(_("session"), blank=True)

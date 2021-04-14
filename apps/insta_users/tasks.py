@@ -16,7 +16,7 @@ from pid import PidFile
 
 from .models import InstaUser, InstaAction
 from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
-from .utils.instagram import instagram_login, do_instagram_action, InstagramMediaClosed
+from .utils.instagram import instagram_login, do_instagram_action, get_instagram_session, InstagramMediaClosed, INSTAGRAM_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -74,22 +74,23 @@ def insta_user_action():
     for insta_user in insta_users:
 
         action_selected = random.choice(InstaAction.ACTION_CHOICES[:-1])
-        action = action_selected[1]
+        action_key = action_selected[0]
+        action_str = action_selected[1]
 
-        if insta_user.is_blocked(action_selected[0]):
-            logger.debug(f'skipping insta_user: {insta_user.username}, action {action} blocked')
+        if insta_user.is_blocked(action_key):
+            logger.debug(f'skipping insta_user: {insta_user.username}, action {action_str} blocked')
             continue
 
         _ck = INSTA_USER_LOCK_KEY % insta_user.id
         if cache.get(_ck):
-            logger.debug(f'skipping insta_user: {insta_user.username}, action {action} cache locked')
+            logger.debug(f'skipping insta_user: {insta_user.username}, action {action_str} cache locked')
             continue
 
-        orders = insta_follow_get_orders(insta_user, action)
+        orders = insta_follow_get_orders(insta_user, action_str)
         logger.debug(f'retrieved {len(orders)} - {[o["id"] for o in orders]} - for user: {insta_user.username}')
 
         cache.set(_ck, True, 300)
-        do_orders.delay(insta_user.id, orders, action)
+        do_orders.delay(insta_user.id, orders, action_str)
 
 
 @shared_task
@@ -146,9 +147,33 @@ def activate_insta_users():
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
 
-    InstaUser.objects.filter(
+
+@periodic_task(run_every=crontab(minute='*/15'))
+def reativate_disabled_insta_users():
+    return InstaUser.objects.filter(
         Q(status=InstaUser.STATUS_DISABLED, updated_time__lt=timezone.now() - timezone.timedelta(days=3)) |
         Q(status=InstaUser.STATUS_LOGIN_LIMIT, updated_time__lt=timezone.now() - timezone.timedelta(hours=3))
     ).update(
         status=InstaUser.STATUS_ACTIVE,
     )
+
+
+@periodic_task(run_every=crontab(minute='0', hour=0))
+def cleanup_disabled_insta_users():
+    insta_users = InstaUser.objects.filter(
+        Q(status=InstaUser.STATUS_DISABLED) | Q(status=InstaUser.STATUS_LOGIN_FAILED),
+        updated_time__lt=timezone.now() - timezone.timedelta(days=30)
+    )
+
+    for insta_user in insta_users:
+        if insta_user.session:
+            session = get_instagram_session(insta_user)
+            link = f"{INSTAGRAM_BASE_URL}/{insta_user.username}/?__a=1"
+            _s = session.get(link)
+            should_be_deleted = _s.status_code == "404"
+        else:
+            should_be_deleted = True
+
+        if should_be_deleted:
+            logger.info(f"{insta_user.username} deleted!!")
+            insta_user.delete()

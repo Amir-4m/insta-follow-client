@@ -32,13 +32,13 @@ class InstagramMediaClosed(Exception):
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
+    user_agent = INSTAGRAM_USER_AGENT
     # user_agent = ua.random
-    # user_agent = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
     session.headers = {
-        'Referer': INSTAGRAM_BASE_URL,
-        'user-agent': INSTAGRAM_USER_AGENT,
-        'content-type': 'application/x-www-form-urlencode',
-        'referer': 'https://www.instagram.com/accounts/login/',
+        'referer': INSTAGRAM_BASE_URL,
+        'user-agent': user_agent,
+        # 'content-type': 'application/x-www-form-urlencode',
+        # 'referer': 'https://www.instagram.com/accounts/login/',
     }
 
     resp = session.get(INSTAGRAM_BASE_URL)
@@ -127,6 +127,8 @@ def get_instagram_entity_data(session, order):
         logger.debug(f"[instagram entity check]-[HTTPError]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]")
         if e.response.status_code == 404:
             raise InstagramMediaClosed('Not Found')
+        if e.response.status_code == 429:
+            raise
 
     except JSONDecodeError:
         logger.error(f"[instagram entity check]-[JSONDecodeError]-[action: {order['action']}]-[order: {order['id']}]-[url: {media_link}]")
