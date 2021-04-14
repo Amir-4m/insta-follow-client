@@ -20,6 +20,7 @@ class InstaAction(object):
 
     BLOCK_TYPE_TEMP = 'temp'
     BLOCK_TYPE_SPAM = 'spam'
+    BLOCK_TYPE_PERM = 'perm'
 
     @classmethod
     def get_action_from_key(cls, key):
@@ -106,6 +107,7 @@ class InstaUser(models.Model):
         block_count = min(self.blocked_data.get(action, {}).get('count', 0) + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
         self.blocked_data[action] = dict(
             block_time=int(datetime.now().timestamp()),
+            block_time_display=datetime.now().strftime('%m-%d %H:%M'),
             block_type=block_type,
             count=block_count
         )
@@ -122,6 +124,9 @@ class InstaUser(models.Model):
         action_str = InstaAction.get_action_from_key(action)
 
         _data = self.blocked_data[action]
+        if _data['block_type'] == InstaAction.BLOCK_TYPE_PERM:
+            return True
+
         if _data['block_type'] == InstaAction.BLOCK_TYPE_TEMP:
             return _data['block_time'] > int((datetime.now() - timedelta(minutes=settings.INSTA_FOLLOW_SETTINGS[f'pre_lock_{action_str}'])).timestamp())
 

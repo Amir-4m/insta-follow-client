@@ -12,7 +12,15 @@ from apps.insta_users.models import InstaAction
 logger = logging.getLogger(__name__)
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
-INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
+# INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
+# DEVICE_SETTINGS = {
+#     'manufacturer': 'Xiaomi',
+#     'model': 'HM 1SW',
+#     'android_version': 18,
+#     'android_release': '4.3'
+# }
+# USER_AGENT = f'Instagram 10.26.0 Android ({android_version}/{android_release}; 320dpi; 720x1280; {manufacturer}; {model}; armani; qcom; en_US)'
+INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
 
 # ua = UserAgent()
 
@@ -25,10 +33,12 @@ def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
     # user_agent = ua.random
-    user_agent = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
+    # user_agent = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
     session.headers = {
         'Referer': INSTAGRAM_BASE_URL,
-        'user-agent': user_agent,
+        'user-agent': INSTAGRAM_USER_AGENT,
+        'content-type': 'application/x-www-form-urlencode',
+        'referer': 'https://www.instagram.com/accounts/login/',
     }
 
     resp = session.get(INSTAGRAM_BASE_URL)
@@ -36,29 +46,37 @@ def instagram_login(insta_user, commit=True):
     insta_user.set_proxy(session)
 
     login_data = {'username': insta_user.username, 'enc_password': f'#PWD_INSTAGRAM_BROWSER:0:{datetime.now().timestamp()}:{insta_user.password}'}
-    login_resp = session.post(INSTAGRAM_LOGIN_URL, data=login_data, allow_redirects=True)
-    session.headers.update({'X-CSRFToken': resp.cookies['csrftoken']})
+    login_resp = session.post(f"{INSTAGRAM_BASE_URL}/accounts/login/ajax/", data=login_data, allow_redirects=True)
+    session.headers.update({'X-CSRFToken': login_resp.cookies['csrftoken']})
 
     try:
-        res = login_resp.json()
-        status = res.get('status', '')
-        is_auth = res.get('authenticated', False)
-        message = res.get('message', '')
+        try:
+            result = login_resp.json()
+        except:
+            result = {}
+        login_resp.raise_for_status()
+        status = result.get('status', '')
+        is_auth = result.get('authenticated', False)
+        message = result.get('message', '')
 
         if status == 'fail':
-            logger.warning(f"[Instagram Login]-[failed for {insta_user.username}]-[res: {res}]")
+            logger.warning(f"[Instagram Login]-[failed for {insta_user.username}]-[res: {result}]")
             insta_user.status = insta_user.STATUS_LOGIN_LIMIT
             if message == 'checkpoint_required':
                 insta_user.status = insta_user.STATUS_DISABLED
         elif is_auth:
-            insta_user.status = insta_user.STATUS_ACTIVE
+            # insta_user.status = insta_user.STATUS_ACTIVE
             # session.cookies.set('user-agent', user_agent.replace(';', '-'))
             insta_user.set_session(session.cookies.get_dict())
             insta_user.user_id = session.cookies['ds_user_id']
             logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
         else:
             insta_user.status = insta_user.STATUS_LOGIN_FAILED
-            logger.warning(f"[Instagram Login]-[failed for {insta_user.username}]-[res: {res}]")
+            logger.warning(f"[Instagram Login]-[failed for {insta_user.username}]-[res: {result}]")
+
+    except requests.exceptions.HTTPError as e:
+        logger.warning(f"[Instagram Login]-[HTTPError]-[insta_user: {insta_user.username}]-[status code: {e.response.status_code}]-[body: {result}]")
+        insta_user.status = insta_user.STATUS_LOGIN_FAILED
 
     except Exception as e:
         logger.warning(f'[Instagram Login]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[result: {login_resp.text}]')
@@ -120,13 +138,13 @@ def get_instagram_entity_data(session, order):
 def instagram_like(insta_user, order):
     session = get_instagram_session(insta_user)
     get_instagram_entity_data(session, order)
-    return session.post(f"https://www.instagram.com/web/likes/{order['entity_id']}/like/")
+    return session.post(f"{INSTAGRAM_BASE_URL}/web/likes/{order['entity_id']}/like/")
 
 
 def instagram_follow(insta_user, order):
     session = get_instagram_session(insta_user)
     get_instagram_entity_data(session, order)
-    return session.post(f"https://www.instagram.com/web/friendships/{order['entity_id']}/follow/")
+    return session.post(f"{INSTAGRAM_BASE_URL}/web/friendships/{order['entity_id']}/follow/")
 
 
 def instagram_comment(insta_user, order):
@@ -136,7 +154,7 @@ def instagram_comment(insta_user, order):
         "comment_text": random.choice(order['comments']),
         "replied_to_comment_id": ""
     }
-    return session.post(f"https://www.instagram.com/web/comments/{order['entity_id']}/add/", data=data)
+    return session.post(f"{INSTAGRAM_BASE_URL}/web/comments/{order['entity_id']}/add/", data=data)
 
 
 def do_instagram_action(insta_user, order):
@@ -162,6 +180,7 @@ def do_instagram_action(insta_user, order):
 
         elif _s.status_code == 400:
             message = result.get('message', '')
+            status = result.get('status', '')
 
             if message == 'feedback_required' and result.get('spam', False):
                 insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)
@@ -172,7 +191,10 @@ def do_instagram_action(insta_user, order):
                 insta_user.status = insta_user.STATUS_DISABLED
                 insta_user.clear_session()
 
-            if order['action'] == InstaAction.ACTION_COMMENT and result.get('status', '') == 'fail':
+            if order['action'] == InstaAction.ACTION_FOLLOW and status == 'fail' and "following the max limit of accounts" in message:
+                insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_PERM)
+
+            if order['action'] == InstaAction.ACTION_COMMENT and status == 'fail':
                 insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)
 
             insta_user.save()

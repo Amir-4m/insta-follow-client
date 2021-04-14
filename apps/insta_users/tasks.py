@@ -129,7 +129,7 @@ def instagram_login_task(insta_user_id):
 
 
 @periodic_task(run_every=crontab(minute='*'))
-def reactivate_blocked_users():
+def activate_insta_users():
     no_session_users = InstaUser.objects.filter(
         status=InstaUser.STATUS_ACTIVE,
         session='',
