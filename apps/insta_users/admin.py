@@ -6,12 +6,12 @@ from .models import InstaUser
 
 @admin.register(InstaUser)
 class InstaUserAdmin(admin.ModelAdmin):
-    list_display = ("username", "created_time", "updated_time", "user_id", "status", "blocked", "server_key")
+    list_display = ("username", "created_time", "updated_time", "user_id", "status", "blocked", "proxy", "server_key")
     list_filter = ("status", "created_time")
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
     readonly_fields = ('blocked_data',)
-    actions = ('make_instauser_active',)
+    actions = ('make_active', 'make_disable')
 
     @admin.display
     def blocked(self, obj):

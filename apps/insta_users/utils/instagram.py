@@ -186,19 +186,22 @@ def do_instagram_action(insta_user, order):
         _s.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
+
+        status_code = e.response.status_code
+
         try:
-            result = _s.json()
+            result = e.response.json()
         except:
             result = {}
 
-        logger.warning(f"[Instagram do action]-[HTTPError]-[Insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {e.response.status_code}]-[body: {result}]")
+        logger.warning(f"[Instagram do action]-[HTTPError]-[Insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {status_code}]-[body: {result}]")
 
-        if _s.status_code == 429:
+        if status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
             insta_user.proxy_id = Proxy.get_proxy()
             insta_user.save()
 
-        elif _s.status_code == 400:
+        elif status_code == 400:
             message = result.get('message', '')
             status = result.get('status', '')
 

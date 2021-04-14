@@ -8,6 +8,7 @@ from .models import Proxy
 class ProxyAdmin(admin.ModelAdmin):
     list_display = ['server', 'port',  'protocol', 'is_enable']
     list_filter = ['is_enable']
+    actions = ('make_enable', 'make_disable')
 
     @admin.action(description=_('Mark selected as Enable.'))
     def make_enable(self, request, queryset):
