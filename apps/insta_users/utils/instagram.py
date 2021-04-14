@@ -1,4 +1,5 @@
 import logging
+
 import requests
 import random
 from json.decoder import JSONDecodeError
@@ -14,8 +15,9 @@ logger = logging.getLogger(__name__)
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
+INSTAGRAM_FOLLOW_SUGGEST_URL = f'{INSTAGRAM_BASE_URL}/graphql/query/'
 
-ua = UserAgent()
+# ua = UserAgent()
 
 
 class InstagramMediaClosed(Exception):
@@ -188,3 +190,16 @@ def do_instagram_action(insta_user, order):
     except Exception as e:
         logger.error(f"[instagram]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]")
         raise
+
+
+def get_instagram_follow_suggested(insta_user):
+    params = dict(
+        query_hash='ed2e3ff5ae8b96717476b62ef06ed8cc',
+        variables='{"fetch_suggested_count": 30, "include_media": false}'
+    )
+
+    session = get_instagram_session(insta_user)
+    resp = session.get(INSTAGRAM_FOLLOW_SUGGEST_URL, params=params)
+
+    # list of users data to follow
+    return resp.json()['data']['user']['edge_suggested_users']['edges']

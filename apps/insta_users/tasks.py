@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 import random
 
@@ -10,8 +9,6 @@ from django.core.cache import cache
 from celery.schedules import crontab
 from celery.task import periodic_task
 from celery import shared_task
-
-from pid import PidFile
 
 from .models import InstaUser, InstaAction
 from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
@@ -35,31 +32,6 @@ INSTAGRAM_HEADERS = {
     "Connection": "keep-alive",
 }
 """
-
-
-def check_running(function_name):
-    if not os.path.exists('/tmp'):
-        os.mkdir('/tmp')
-    file_lock = PidFile(str(function_name), piddir='/tmp')
-    file_lock.create()
-    return file_lock
-
-
-def stop_duplicate_task(func):
-    def inner_function():
-        try:
-            file_lock = check_running(func.__name__)
-        except:
-            logger.error(f"[Another {func.__name__} is already running]")
-            return
-
-        func()
-
-        if file_lock:
-            file_lock.close()
-
-    return inner_function
-
 
 # @periodic_task(run_every=crontab(minute='*/5'))
 # def p_insta_user_action():

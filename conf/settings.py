@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     # Local
     'apps.insta_users',
     'apps.proxies',
+    'apps.user_handlers',
 
     # Third Parties
     
@@ -210,6 +211,7 @@ LOGGING = {
 # Custom Values
 INSTA_FOLLOW_BASE_URL = config('INSTA_FOLLOW_BASE_URL')
 INSTA_FOLLOW_ORDER_LIMIT = config('INSTA_FOLLOW_ORDER_LIMIT', cast=int, default=5)
+MAX_SUGGESTED_FOLLOW_EACH_TURN = 5
 
 INSTA_FOLLOW_SETTINGS = {
     "delay_like": 3,

@@ -39,6 +39,7 @@ class LiveManager(models.Manager):
 
 class InstaUser(models.Model):
     STATUS_ACTIVE = 10
+    STATUS_NEW = 11
     # STATUS_BLOCKED_TEMP = 20
     # STATUS_BLOCKED = 21
     STATUS_REMOVED = 30
@@ -47,6 +48,7 @@ class InstaUser(models.Model):
     STATUS_LOGIN_LIMIT = 41
 
     STATUS_CHOICES = (
+        (STATUS_NEW, _("new")),
         (STATUS_ACTIVE, _("active")),
         (STATUS_REMOVED, _("removed")),
         (STATUS_DISABLED, _("disabled")),
@@ -65,7 +67,7 @@ class InstaUser(models.Model):
 
     server_key = models.UUIDField(_('server Key'), blank=True, null=True, help_text=_('insta follow server key'))
 
-    status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_ACTIVE, db_index=True)
+    status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_NEW, db_index=True)
     description = models.TextField(_("description"), blank=True)
 
     blocked_data = models.JSONField(_('blocked data'), default=dict, editable=False)
