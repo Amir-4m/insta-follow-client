@@ -5,7 +5,7 @@ from json.decoder import JSONDecodeError
 
 from datetime import datetime
 
-from fake_useragent import UserAgent
+# from fake_useragent import UserAgent
 
 from apps.insta_users.models import InstaAction
 from apps.proxies.models import Proxy
@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
-# INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 # DEVICE_SETTINGS = {
 #     'manufacturer': 'Xiaomi',
 #     'model': 'HM 1SW',
@@ -22,9 +21,9 @@ INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 #     'android_release': '4.3'
 # }
 # USER_AGENT = f'Instagram 10.26.0 Android ({android_version}/{android_release}; 320dpi; 720x1280; {manufacturer}; {model}; armani; qcom; en_US)'
-# INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
+INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
 
-ua = UserAgent()
+# ua = UserAgent()
 
 
 class InstagramMediaClosed(Exception):
@@ -34,8 +33,8 @@ class InstagramMediaClosed(Exception):
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
-    # user_agent = INSTAGRAM_USER_AGENT
-    user_agent = ua.random
+    # user_agent = ua.random
+    user_agent = INSTAGRAM_USER_AGENT
     session.headers = {
         'referer': INSTAGRAM_BASE_URL,
         'user-agent': user_agent,
@@ -91,11 +90,11 @@ def instagram_login(insta_user, commit=True):
 def get_instagram_session(insta_user):
     session = requests.session()
     user_session = insta_user.get_session
-    user_agent = user_session.pop('user-agent', '')
-    if user_agent:
-        session.headers.update({
-            'user-agent': user_agent,
-        })
+    # user_agent = user_session.pop('user-agent', '')
+    # if user_agent:
+    #     session.headers.update({
+    #         'user-agent': user_agent,
+    #     })
     session.headers.update({
         'X-CSRFToken': user_session['csrftoken'],
         'X-Instagram-AJAX': '7e64493c83ae',
@@ -194,7 +193,8 @@ def do_instagram_action(insta_user, order):
         except:
             result = {}
 
-        logger.warning(f"[Instagram do action]-[HTTPError]-[Insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]-[status code: {status_code}]-[body: {result}]")
+        logger.warning(f"[Instagram do action]-[HTTPError]-[Insta_user: {insta_user.username}]-[action: {order['action']}]-"
+                       f"[order: {order['id']}]-[status code: {status_code}]-[proxy: {session.proxies}]-[body: {result}]")
 
         if status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
