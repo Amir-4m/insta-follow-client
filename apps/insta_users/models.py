@@ -29,6 +29,20 @@ class InstaAction(object):
                 return act[1]
 
 
+class InstaContentCategory(models.Model):
+    created_time = models.DateTimeField(_('created time'), auto_now_add=True)
+    updated_time = models.DateTimeField(_('updated time'), auto_now=True)
+    title = models.CharField(_('title'), max_length=64)
+
+    class Meta:
+        db_table = 'insta_categories'
+        verbose_name = _('Category')
+        verbose_name_plural = _('Categories')
+
+    def __str__(self):
+        return self.title
+
+
 class LiveManager(models.Manager):
 
     def live(self):
@@ -81,6 +95,8 @@ class InstaUser(models.Model):
     description = models.TextField(_("description"), blank=True)
 
     blocked_data = models.JSONField(_('blocked data'), default=dict, editable=False)
+
+    categories = models.ManyToManyField(InstaContentCategory, blank=True)
 
     objects = LiveManager()
 

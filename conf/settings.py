@@ -36,7 +36,6 @@ INSTALLED_APPS = [
     'apps.insta_users',
     'apps.proxies',
     'apps.simulators',
-    # 'apps.content_mgmt',
 
     # Third Parties
 
@@ -135,7 +134,10 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 STATIC_ROOT = BASE_DIR / 'static'
-STATIC_URL = '/static/'
+STATIC_URL = config('STATIC_URL', default='/static/')
+
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = config('MEDIA_URL', default='/media/')
 
 LOG_DIR = BASE_DIR / 'logs'
 LOGGING = {
@@ -214,20 +216,17 @@ INSTA_FOLLOW_BASE_URL = config('INSTA_FOLLOW_BASE_URL')
 INSTA_FOLLOW_ORDER_LIMIT = config('INSTA_FOLLOW_ORDER_LIMIT', cast=int, default=5)
 
 INSTA_FOLLOW_SETTINGS = {
-    "delay_follow": 10,
-    "delay_like": 5,
+    "delay_follow": 5,
+    "delay_like": 3,
     "delay_comment": 7,
 
-    "lock_follow": 240,
-    "lock_like": 60,
-    "lock_comment": 30,
-
-    "pre_lock_follow": 15,
+    "pre_lock_follow": 20,
     "pre_lock_like": 10,
-    "pre_lock_comment": 10,
+    "pre_lock_comment": 15,
+
+    "lock_follow": 120,
+    "lock_like": 60,
+    "lock_comment": 90,
 
     "max_lock": 10,
 }
-
-MEDIA_ROOT = BASE_DIR / 'media'
-MEDIA_URL = config('MEDIA_URL', default='/media/')

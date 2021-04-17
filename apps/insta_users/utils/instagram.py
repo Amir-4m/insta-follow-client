@@ -5,7 +5,7 @@ from json.decoder import JSONDecodeError
 
 from datetime import datetime
 
-# from fake_useragent import UserAgent
+from fake_useragent import UserAgent
 
 from apps.insta_users.models import InstaAction
 from apps.proxies.models import Proxy
@@ -23,7 +23,7 @@ INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 # USER_AGENT = f'Instagram 10.26.0 Android ({android_version}/{android_release}; 320dpi; 720x1280; {manufacturer}; {model}; armani; qcom; en_US)'
 INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
 
-# ua = UserAgent()
+ua = UserAgent()
 
 
 class InstagramMediaClosed(Exception):
@@ -33,8 +33,8 @@ class InstagramMediaClosed(Exception):
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
 
-    # user_agent = ua.random
-    user_agent = INSTAGRAM_USER_AGENT
+    user_agent = ua.random
+    # user_agent = INSTAGRAM_USER_AGENT
     session.headers = {
         'referer': INSTAGRAM_BASE_URL,
         'user-agent': user_agent,
@@ -66,7 +66,6 @@ def instagram_login(insta_user, commit=True):
             if message == 'checkpoint_required':
                 insta_user.status = insta_user.STATUS_DISABLED
         elif is_auth:
-            # insta_user.status = insta_user.STATUS_ACTIVE
             session.cookies.set('user-agent', user_agent.replace(';', '-'))
             insta_user.set_session(session.cookies.get_dict())
             insta_user.user_id = session.cookies['ds_user_id']
@@ -90,11 +89,11 @@ def instagram_login(insta_user, commit=True):
 def get_instagram_session(insta_user):
     session = requests.session()
     user_session = insta_user.get_session
-    # user_agent = user_session.pop('user-agent', '')
-    # if user_agent:
-    #     session.headers.update({
-    #         'user-agent': user_agent,
-    #     })
+    user_agent = user_session.pop('user-agent', '')
+    if user_agent:
+        session.headers.update({
+            'user-agent': user_agent,
+        })
     session.headers.update({
         'X-CSRFToken': user_session['csrftoken'],
         'X-Instagram-AJAX': '7e64493c83ae',
@@ -152,6 +151,22 @@ def get_instagram_suggested_follows(insta_user):
         result = []
 
     return result
+
+
+def change_instagram_profile_pic(insta_user, image_field):
+    session = get_instagram_session(insta_user)
+
+    files = {
+        "profile_pic": open(image_field.path, 'rb')
+    }
+    data = {
+        "Content-Disposition": "form-data",
+        "Content-Type": "image/jpeg",
+        "name": "profile_pic",
+        "filename": image_field.name.split('/')[-1],
+    }
+
+    return session.post(f"{INSTAGRAM_BASE_URL}/accounts/web_change_profile_picture/", files=files, data=data)
 
 
 def do_instagram_like(session, entity_id):

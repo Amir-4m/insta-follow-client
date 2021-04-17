@@ -1,7 +1,12 @@
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
-from .models import InstaUser
+from .models import InstaUser, InstaContentCategory
+
+
+@admin.register(InstaContentCategory)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('title', 'created_time')
 
 
 @admin.register(InstaUser)
@@ -10,6 +15,7 @@ class InstaUserAdmin(admin.ModelAdmin):
     list_filter = ("status", "created_time")
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
+    filter_horizontal = ('categories',)
     readonly_fields = ('blocked_data',)
     actions = ('make_active', 'make_disable')
 

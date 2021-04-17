@@ -7,10 +7,22 @@ from celery import shared_task
 from celery.schedules import crontab
 from celery.task import periodic_task
 
+from .models import InstaContentImage
 from apps.insta_users.models import InstaUser, InstaAction
-from apps.insta_users.utils.instagram import get_instagram_suggested_follows, do_instagram_action
+from apps.insta_users.utils.instagram import get_instagram_suggested_follows, do_instagram_action, change_instagram_profile_pic
 
 MAX_FOLLOW_EACH_TURN = 6
+
+
+@shared_task()
+def change_profile_picture(insta_user_id):
+    insta_user = InstaUser.objects.get(user_id=insta_user_id)
+    if not insta_user.categories:
+        return
+
+    category = random.choice(insta_user.categories)
+    img = InstaContentImage.objects.filter(categories=category).order_by('?')[0]
+    change_instagram_profile_pic(insta_user, img.image)
 
 
 @shared_task()
@@ -64,9 +76,14 @@ def follow_active_users(insta_user_id):
 @periodic_task(run_every=crontab(minute='*/30'))
 def random_follow_task():
     new_insta_user_ids = InstaUser.objects.new().filter(
-        created_time__hour=random.randint(0, 24)
-    ).values_list('user_id', flat=True)
+        # created_time__hour=random.randint(0, 24)
+    ).values_list('user_id', flat=True).order_by('?')[:3]
 
-    action_to_call = globals()[random.choice(('follow_suggested', 'follow_new_user', 'follow_active_users'))]
+    action_to_call = globals()[random.choice((
+        'follow_suggested',
+        'follow_new_user',
+        'follow_active_users',
+        'change_profile_picture',
+    ))]
     for insta_user_id in new_insta_user_ids:
         action_to_call.delay(insta_user_id)

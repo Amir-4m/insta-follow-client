@@ -40,7 +40,7 @@ INSTAGRAM_HEADERS = {
 
 
 # @stop_duplicate_task
-@periodic_task(run_every=crontab(minute='*/10'))
+@periodic_task(run_every=crontab(minute='*/3'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
@@ -138,7 +138,7 @@ def reactivate_disabled_insta_users():
     )
 
 
-@periodic_task(run_every=crontab(minute='0', hour='0'))
+# @periodic_task(run_every=crontab(minute='0', hour='0'))
 def cleanup_disabled_insta_users():
     insta_users = InstaUser.objects.filter(
         Q(status=InstaUser.STATUS_DISABLED) | Q(status=InstaUser.STATUS_LOGIN_FAILED),
