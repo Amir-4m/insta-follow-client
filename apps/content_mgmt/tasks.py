@@ -32,15 +32,14 @@ def post_pic(insta_user):
     caption = CaptionContent.objects.order_by('?')[0]
 
     microtime = int(datetime.now().timestamp())
-    pic_size = os.path.getsize(f'{settings.MEDIA_ROOT}/{content.image}')
+    pic_size = content.image.size
+
     headers = {
         "content-type": "image / jpg",
         "X-Entity-Name": f"fb_uploader_{microtime}",
         "Offset": "0",
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36",
         "x-entity-length": f"{pic_size}",
         "X-Instagram-Rupload-Params": f'{{"media_type": 1, "upload_id": {microtime}, "upload_media_height": 800, "upload_media_width": 1000}}',
-        'Referer': 'https://www.instagram.com/create/crop/',
     }
     session.headers.update(headers)
     session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
@@ -52,7 +51,6 @@ def post_pic(insta_user):
         'custom_accessibility_caption': '',
         'retry_timeout': '',
     }
-    session.headers.update({'Referer': 'https://www.instagram.com/create/details/'})
     session.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
     return session.post('https://www.instagram.com/create/configure/', data=body)
 
@@ -67,10 +65,8 @@ def post_story(insta_user):
         "content-type": "image / jpg",
         "X-Entity-Name": f"fb_uploader_{microtime}",
         "Offset": "0",
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36",
         "x-entity-length": f"{pic_size}",
         "X-Instagram-Rupload-Params": f'{{"media_type": 1, "upload_id": {microtime}, "upload_media_height": 800, "upload_media_width": 1000}}',
-        'Referer': 'https://www.instagram.com/create/crop/',
     }
     session.headers.update(headers)
     session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
@@ -81,6 +77,5 @@ def post_story(insta_user):
         'custom_accessibility_caption': '',
         'retry_timeout': '',
     }
-    session.headers.update({'Referer': 'https://www.instagram.com/create/details/'})
     session.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
     return session.post('https://www.instagram.com/create/configure_to_story/', data=body)
