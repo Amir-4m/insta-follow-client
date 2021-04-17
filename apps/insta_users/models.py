@@ -87,6 +87,7 @@ class InstaUser(models.Model):
     password = models.CharField(_("password"), max_length=128)
     user_id = models.PositiveBigIntegerField(_("user ID"), unique=True, blank=True, null=True)
     session = models.TextField(_("session"), blank=True)
+    user_agent = models.TextField(_("user agent"), blank=True)
     proxy = models.ForeignKey('proxies.Proxy', on_delete=models.SET_NULL, null=True, blank=True, related_name='insta_users')
 
     server_key = models.UUIDField(_('server Key'), blank=True, null=True, help_text=_('insta follow server key'))

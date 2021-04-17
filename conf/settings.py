@@ -125,7 +125,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
-LANGUAGE_CODE = 'fa-ir'
+LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Tehran'
 USE_I18N = False
 USE_L10N = False
@@ -216,7 +216,7 @@ INSTA_FOLLOW_BASE_URL = config('INSTA_FOLLOW_BASE_URL')
 INSTA_FOLLOW_ORDER_LIMIT = config('INSTA_FOLLOW_ORDER_LIMIT', cast=int, default=5)
 
 INSTA_FOLLOW_SETTINGS = {
-    "delay_follow": 5,
+    "delay_follow": 3,
     "delay_like": 3,
     "delay_comment": 7,
 

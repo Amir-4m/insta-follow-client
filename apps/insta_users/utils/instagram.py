@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
+INSTAGRAM_GRAPHQL_URL = f'{INSTAGRAM_BASE_URL}/graphql/query/'
+
 # DEVICE_SETTINGS = {
 #     'manufacturer': 'Xiaomi',
 #     'model': 'HM 1SW',
@@ -48,7 +50,6 @@ def instagram_login(insta_user, commit=True):
 
     login_data = {'username': insta_user.username, 'enc_password': f'#PWD_INSTAGRAM_BROWSER:0:{datetime.now().timestamp()}:{insta_user.password}'}
     login_resp = session.post(f"{INSTAGRAM_BASE_URL}/accounts/login/ajax/", data=login_data, allow_redirects=True)
-    session.headers.update({'X-CSRFToken': login_resp.cookies['csrftoken']})
 
     try:
         try:
@@ -66,17 +67,21 @@ def instagram_login(insta_user, commit=True):
             if message == 'checkpoint_required':
                 insta_user.status = insta_user.STATUS_DISABLED
         elif is_auth:
-            session.cookies.set('user-agent', user_agent.replace(';', '-'))
+            # session.headers.update({'X-CSRFToken': login_resp.cookies['csrftoken']})
             insta_user.set_session(session.cookies.get_dict())
             insta_user.user_id = session.cookies['ds_user_id']
+            insta_user.user_agent = user_agent
             logger.info(f"[Instagram Login]-[Succeeded for {insta_user.username}]")
         else:
             insta_user.status = insta_user.STATUS_LOGIN_FAILED
             logger.warning(f"[Instagram Login]-[failed for {insta_user.username}]-[res: {result}]")
 
     except requests.exceptions.HTTPError as e:
+        status_code = e.response.status_code
         logger.warning(f"[Instagram Login]-[HTTPError]-[Insta_user: {insta_user.username}]-[status code: {e.response.status_code}]-[body: {result}]")
         insta_user.status = insta_user.STATUS_LOGIN_FAILED
+        if status_code == 429:
+            insta_user.status = insta_user.STATUS_LOGIN_LIMIT
 
     except Exception as e:
         logger.warning(f'[Instagram Login]-[Insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]-[result: {login_resp.text}]')
@@ -89,11 +94,11 @@ def instagram_login(insta_user, commit=True):
 def get_instagram_session(insta_user):
     session = requests.session()
     user_session = insta_user.get_session
-    user_agent = user_session.pop('user-agent', '')
-    if user_agent:
-        session.headers.update({
-            'user-agent': user_agent,
-        })
+    # user_agent = insta_user.user_agent
+    # if user_agent:
+    #     session.headers.update({
+    #         'user-agent': user_agent,
+    #     })
     session.headers.update({
         'X-CSRFToken': user_session['csrftoken'],
         'X-Instagram-AJAX': '7e64493c83ae',
@@ -137,6 +142,36 @@ def check_instagram_entity(session, order):
         logger.error(f"[Instagram entity check]-[KeyError]-[action: {order['action']}]-[order: {order['id']}]-[err: {e}]")
 
 
+def get_instagram_profile_posts(insta_user, insta_username):
+    session = get_instagram_session(insta_user)
+
+    profile_link = f"{INSTAGRAM_BASE_URL}/{insta_username}/"
+    params = dict(__a=1)
+    try:
+        resp = session.get(profile_link, params=params)
+        result = resp.json()['graphql']['user']['edge_owner_to_timeline_media']['edges']
+    except:
+        result = []
+
+    return result
+
+
+def get_instagram_explorer_posts(insta_user):
+    session = get_instagram_session(insta_user)
+
+    params = dict(
+        query_hash='8f0a6bb6a0450ede10d2f0d46fd6c771',
+        variables='{"has_threaded_comments": true}'
+    )
+    try:
+        resp = session.get(INSTAGRAM_GRAPHQL_URL, params=params)
+        result = resp.json()['data']['user']['edge_web_feed_timeline']['edges']
+    except:
+        result = []
+
+    return result
+
+
 def get_instagram_suggested_follows(insta_user):
     session = get_instagram_session(insta_user)
 
@@ -145,7 +180,7 @@ def get_instagram_suggested_follows(insta_user):
         variables='{"fetch_suggested_count": 30, "include_media": false}'
     )
     try:
-        resp = session.get(f"{INSTAGRAM_BASE_URL}/graphql/query/", params=params)
+        resp = session.get(INSTAGRAM_GRAPHQL_URL, params=params)
         result = resp.json()['data']['user']['edge_suggested_users']['edges']
     except:
         result = []
