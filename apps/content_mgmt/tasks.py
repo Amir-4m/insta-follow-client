@@ -28,6 +28,8 @@ def post_pic(insta_user):
     session = get_instagram_session(insta_user)
 
     content = ImageContent.objects.order_by('?')[0]
+    height = content.image.height
+    width =content.image.width
 
     caption = CaptionContent.objects.order_by('?')[0]
 
@@ -39,7 +41,7 @@ def post_pic(insta_user):
         "X-Entity-Name": f"fb_uploader_{microtime}",
         "Offset": "0",
         "x-entity-length": f"{pic_size}",
-        "X-Instagram-Rupload-Params": f'{{"media_type": 1, "upload_id": {microtime}, "upload_media_height": 800, "upload_media_width": 1000}}',
+        "X-Instagram-Rupload-Params": f'{{"media_type": 1, "upload_id": {microtime}, "upload_media_height": {height}, "upload_media_width": {width}}}',
     }
     session.headers.update(headers)
     session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
@@ -58,6 +60,8 @@ def post_pic(insta_user):
 def post_story(insta_user):
     session = get_instagram_session(insta_user)
     content = ImageContent.objects.order_by('?')[0]
+    height = content.image.height
+    width = content.image.width
 
     microtime = int(datetime.now().timestamp())
     pic_size = os.path.getsize(f'{settings.MEDIA_ROOT}/{content.image}')
@@ -66,7 +70,7 @@ def post_story(insta_user):
         "X-Entity-Name": f"fb_uploader_{microtime}",
         "Offset": "0",
         "x-entity-length": f"{pic_size}",
-        "X-Instagram-Rupload-Params": f'{{"media_type": 1, "upload_id": {microtime}, "upload_media_height": 800, "upload_media_width": 1000}}',
+        "X-Instagram-Rupload-Params": f'{{"media_type": 1, "upload_id": {microtime}, "upload_media_height": {height}, "upload_media_width": {width}}}',
     }
     session.headers.update(headers)
     session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
