@@ -8,9 +8,13 @@ from celery import shared_task
 from celery.schedules import crontab
 from celery.task import periodic_task
 
-from .models import InstaContentImage
+from .models import InstaContentImage, InstaContentCaption
 from apps.insta_users.models import InstaUser, InstaAction
-from apps.insta_users.utils.instagram import get_instagram_suggested_follows, do_instagram_action, change_instagram_profile_pic, get_instagram_profile_posts
+from apps.insta_users.utils.instagram import (
+    do_instagram_action, upload_instagram_post,
+    get_instagram_suggested_follows, get_instagram_profile_posts,
+    change_instagram_profile_pic,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,19 @@ def change_profile_picture(insta_user_id):
     category = random.choice(insta_user_categories)
     img = InstaContentImage.objects.filter(categories=category).order_by('?')[0]
     change_instagram_profile_pic(insta_user, img.image)
+
+
+@shared_task()
+def upload_new_user_post(insta_user_id):
+    insta_user = InstaUser.objects.get(user_id=insta_user_id)
+    insta_user_categories = list(insta_user.categories.all())
+    if not insta_user_categories:
+        return
+
+    category = random.choice(insta_user_categories)
+    img = InstaContentImage.objects.filter(categories=category).order_by('?')[0]
+    cap = InstaContentCaption.objects.filter(categories=category).order_by('?')[0]
+    upload_instagram_post(insta_user, img.image, cap.caption)
 
 
 @shared_task()
@@ -114,6 +131,7 @@ def random_follow_task():
         'follow_new_user',
         'follow_active_users',
         'change_profile_picture',
+        'upload_new_user_post',
     ))]
     for insta_user_id in new_insta_user_ids:
         action_to_call.delay(insta_user_id)

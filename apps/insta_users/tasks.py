@@ -20,18 +20,12 @@ logger = logging.getLogger(__name__)
 INSTA_USER_LOCK_KEY = "insta_lock_%s"
 
 
-# @periodic_task(run_every=crontab(minute='*/5'))
-# def p_insta_user_action():
-#     insta_user_action()
-
-
-# @stop_duplicate_task
-@periodic_task(run_every=crontab(minute='*/5'))
+@periodic_task(run_every=crontab(minute='*/3'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
 
-        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-1])
+        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-2])
         action_key = action_selected[0]
         action_str = action_selected[1]
 
@@ -89,13 +83,14 @@ def instagram_login_task(insta_user_id):
 
 @periodic_task(run_every=crontab(minute='*'))
 def activate_insta_users():
-    # no_session_users = InstaUser.objects.filter(
-    #     Q(status=InstaUser.STATUS_ACTIVE) | Q(status=InstaUser.STATUS_NEW),
-    #     session='',
-    # ).values_list('id', flat=True)
-    #
-    # for insta_user_id in no_session_users:
-    #     instagram_login_task.delay(insta_user_id)
+    no_session_users = InstaUser.objects.filter(
+        # Q(status=InstaUser.STATUS_ACTIVE) | Q(status=InstaUser.STATUS_NEW),
+        status=InstaUser.STATUS_NEW,
+        session='',
+    ).values_list('id', flat=True)
+
+    for insta_user_id in no_session_users:
+        instagram_login_task.delay(insta_user_id)
 
     no_uuid_users = InstaUser.objects.filter(
         status=InstaUser.STATUS_ACTIVE,

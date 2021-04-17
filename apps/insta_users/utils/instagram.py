@@ -8,7 +8,7 @@ from datetime import datetime
 from fake_useragent import UserAgent
 
 from apps.insta_users.models import InstaAction
-# from apps.proxies.models import Proxy
+from apps.proxies.models import Proxy
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +201,8 @@ def change_instagram_profile_pic(insta_user, image_field):
         "filename": image_field.name.split('/')[-1],
     }
 
-    return session.post(f"{INSTAGRAM_BASE_URL}/accounts/web_change_profile_picture/", files=files, data=data)
+    _s = session.post(f"{INSTAGRAM_BASE_URL}/accounts/web_change_profile_picture/", files=files, data=data)
+    _s.raise_for_status()
 
 
 def do_instagram_like(session, entity_id):
@@ -225,7 +226,7 @@ def do_instagram_action(insta_user, order):
 
     try:
         session = get_instagram_session(insta_user)
-        # check_instagram_entity(session, order)
+        check_instagram_entity(session, order)
         action = InstaAction.get_action_from_key(order['action'])
         action_to_call = globals()[f'do_instagram_{action}']
         args = (session, order['entity_id'])
@@ -248,7 +249,7 @@ def do_instagram_action(insta_user, order):
 
         if status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
-            # insta_user.proxy_id = Proxy.get_proxy()
+            insta_user.proxy_id = Proxy.get_proxy()
             insta_user.save()
 
         elif status_code == 400:
@@ -287,3 +288,29 @@ def do_instagram_action(insta_user, order):
     except Exception as e:
         logger.error(f"[Instagram do action]-[{type(e)}]-[Insta_user: {insta_user.username}]-[err: {e}]")
         raise
+
+
+def upload_instagram_post(insta_user, image_field, caption=''):
+    session = get_instagram_session(insta_user)
+    microtime = int(datetime.now().timestamp())
+
+    headers = {
+        "content-type": "image/jpg",
+        "X-Entity-Name": f"fb_uploader_{microtime}",
+        "Offset": "0",
+        "x-entity-length": f"{image_field.size}",
+        "X-Instagram-Rupload-Params": f'{{"media_type": 1, "upload_id": {microtime}, "upload_media_height": {image_field.height}, "upload_media_width": {image_field.width}}}',
+    }
+    session.headers.update(headers)
+    _s = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
+    _s.raise_for_status()
+
+    body = {
+        'upload_id': f'{microtime}',
+        'caption': caption,
+        'custom_accessibility_caption': '',
+        'retry_timeout': '',
+    }
+    session.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
+    _s = session.post(f"{INSTAGRAM_BASE_URL}/create/configure/", data=body)
+    _s.raise_for_status()
