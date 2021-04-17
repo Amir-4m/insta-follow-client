@@ -109,6 +109,8 @@ class InstaUser(models.Model):
 
     def save(self, *args, **kwargs):
         self.username = self.username.lower()
+        if self.user_id is None and self.session != '':
+            self.user_id = self.get_session.get('ds_user_id', None)
         super().save(*args, **kwargs)
 
     def set_proxy(self, session):

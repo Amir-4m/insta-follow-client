@@ -19,20 +19,6 @@ logger = logging.getLogger(__name__)
 
 INSTA_USER_LOCK_KEY = "insta_lock_%s"
 
-# TODO: for later use
-"""
-INSTAGRAM_HEADERS = {
-    "Host": "www.instagram.com",
-    "Accept": "*/*",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Referer": "https://www.instagram.com/accounts/edit/",
-    "X-IG-App-ID": "936619743392459",
-    "X-Requested-With": "XMLHttpRequest",
-    "DNT": "1",
-    "Connection": "keep-alive",
-}
-"""
 
 # @periodic_task(run_every=crontab(minute='*/5'))
 # def p_insta_user_action():
@@ -40,7 +26,7 @@ INSTAGRAM_HEADERS = {
 
 
 # @stop_duplicate_task
-@periodic_task(run_every=crontab(minute='*/3'))
+@periodic_task(run_every=crontab(minute='*/5'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
@@ -103,13 +89,13 @@ def instagram_login_task(insta_user_id):
 
 @periodic_task(run_every=crontab(minute='*'))
 def activate_insta_users():
-    no_session_users = InstaUser.objects.filter(
-        Q(status=InstaUser.STATUS_ACTIVE) | Q(status=InstaUser.STATUS_NEW),
-        session='',
-    ).values_list('id', flat=True)
-
-    for insta_user_id in no_session_users:
-        instagram_login_task.delay(insta_user_id)
+    # no_session_users = InstaUser.objects.filter(
+    #     Q(status=InstaUser.STATUS_ACTIVE) | Q(status=InstaUser.STATUS_NEW),
+    #     session='',
+    # ).values_list('id', flat=True)
+    #
+    # for insta_user_id in no_session_users:
+    #     instagram_login_task.delay(insta_user_id)
 
     no_uuid_users = InstaUser.objects.filter(
         status=InstaUser.STATUS_ACTIVE,
@@ -122,7 +108,7 @@ def activate_insta_users():
     # TODO: uncomment
     # InstaUser.objects.filter(
     #     status=InstaUser.STATUS_NEW,
-    #     created_time__lt=timezone.now() - timezone.timedelta(days=1)
+    #     created_time__lt=timezone.now() - timezone.timedelta(days=3)
     # ).update(
     #     status=InstaUser.STATUS_ACTIVE
     # )
@@ -138,7 +124,7 @@ def reactivate_disabled_insta_users():
     )
 
 
-# @periodic_task(run_every=crontab(minute='0', hour='0'))
+@periodic_task(run_every=crontab(minute='0', hour='0'))
 def cleanup_disabled_insta_users():
     insta_users = InstaUser.objects.filter(
         Q(status=InstaUser.STATUS_DISABLED) | Q(status=InstaUser.STATUS_LOGIN_FAILED),

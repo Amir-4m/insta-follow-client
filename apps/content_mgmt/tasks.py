@@ -37,7 +37,7 @@ def post_pic(insta_user):
     pic_size = content.image.size
 
     headers = {
-        "content-type": "image / jpg",
+        "content-type": "image/jpg",
         "X-Entity-Name": f"fb_uploader_{microtime}",
         "Offset": "0",
         "x-entity-length": f"{pic_size}",

@@ -201,7 +201,7 @@ LOGGING = {
             'propagate': False,
         },
         'apps': {
-            'handlers': ['file'],
+            'handlers': ['file', 'console'],
             'level': 'DEBUG',
         },
         'apps.insta_users.tasks': {

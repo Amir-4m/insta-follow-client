@@ -8,7 +8,7 @@ from datetime import datetime
 from fake_useragent import UserAgent
 
 from apps.insta_users.models import InstaAction
-from apps.proxies.models import Proxy
+# from apps.proxies.models import Proxy
 
 logger = logging.getLogger(__name__)
 
@@ -94,11 +94,11 @@ def instagram_login(insta_user, commit=True):
 def get_instagram_session(insta_user):
     session = requests.session()
     user_session = insta_user.get_session
-    # user_agent = insta_user.user_agent
-    # if user_agent:
-    #     session.headers.update({
-    #         'user-agent': user_agent,
-    #     })
+    user_agent = insta_user.user_agent
+    if user_agent:
+        session.headers.update({
+            'user-agent': user_agent,
+        })
     session.headers.update({
         'X-CSRFToken': user_session['csrftoken'],
         'X-Instagram-AJAX': '7e64493c83ae',
@@ -136,10 +136,10 @@ def check_instagram_entity(session, order):
             raise
 
     except JSONDecodeError:
-        logger.error(f"[Instagram entity check]-[JSONDecodeError]-[action: {order['action']}]-[order: {order['id']}]-[url: {media_link}]")
+        logger.warning(f"[Instagram entity check]-[JSONDecodeError]-[action: {order['action']}]-[order: {order['id']}]-[url: {media_link}]")
 
     except KeyError as e:
-        logger.error(f"[Instagram entity check]-[KeyError]-[action: {order['action']}]-[order: {order['id']}]-[err: {e}]")
+        logger.warning(f"[Instagram entity check]-[KeyError]-[action: {order['action']}]-[order: {order['id']}]-[err: {e}]")
 
 
 def get_instagram_profile_posts(insta_user, insta_username):
@@ -225,7 +225,7 @@ def do_instagram_action(insta_user, order):
 
     try:
         session = get_instagram_session(insta_user)
-        check_instagram_entity(session, order)
+        # check_instagram_entity(session, order)
         action = InstaAction.get_action_from_key(order['action'])
         action_to_call = globals()[f'do_instagram_{action}']
         args = (session, order['entity_id'])
@@ -248,7 +248,7 @@ def do_instagram_action(insta_user, order):
 
         if status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
-            insta_user.proxy_id = Proxy.get_proxy()
+            # insta_user.proxy_id = Proxy.get_proxy()
             insta_user.save()
 
         elif status_code == 400:
@@ -274,11 +274,11 @@ def do_instagram_action(insta_user, order):
 
         raise
 
-    except requests.exceptions.ConnectionError:
-        proxy = insta_user.proxy
-        proxy.is_enable = False
-        proxy.save()
-        raise
+    # except requests.exceptions.ConnectionError:
+    #     proxy = insta_user.proxy
+    #     proxy.is_enable = False
+    #     proxy.save()
+    #     raise
 
     except InstagramMediaClosed as e:
         logger.warning(f"[Instagram do action]-[Media Closed]-[action: {order['action']}]-[order: {order['link']}]-[err: {e}]")
