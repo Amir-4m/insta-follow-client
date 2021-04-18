@@ -16,6 +16,8 @@ INSTAGRAM_BASE_URL = 'https://www.instagram.com'
 INSTAGRAM_LOGIN_URL = f'{INSTAGRAM_BASE_URL}/accounts/login/ajax/'
 INSTAGRAM_GRAPHQL_URL = f'{INSTAGRAM_BASE_URL}/graphql/query/'
 
+INSTAGRAM_LEGACY_BASE_URL = 'https://i.instagram.com'
+
 # DEVICE_SETTINGS = {
 #     'manufacturer': 'Xiaomi',
 #     'model': 'HM 1SW',
@@ -222,11 +224,11 @@ def do_instagram_comment(session, entity_id, comment):
 
 
 def do_instagram_action(insta_user, order):
-    logger.debug(f"[Instagram]-[Insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]")
+    logger.debug(f"[Instagram do action]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]")
 
     try:
         session = get_instagram_session(insta_user)
-        check_instagram_entity(session, order)
+        # check_instagram_entity(session, order)
         action = InstaAction.get_action_from_key(order['action'])
         action_to_call = globals()[f'do_instagram_{action}']
         args = (session, order['entity_id'])
@@ -244,8 +246,8 @@ def do_instagram_action(insta_user, order):
         except:
             result = {}
 
-        logger.warning(f"[Instagram do action]-[HTTPError]-[Insta_user: {insta_user.username}]-[action: {order['action']}]-"
-                       f"[order: {order['id']}]-[status code: {status_code}]-[proxy: {session.proxies}]-[body: {result}]")
+        logger.warning(f"[Instagram do action]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-"
+                       f"[order: {order['entity_id']}]-[status code: {status_code}]-[proxy: {session.proxies}]-[body: {result}]")
 
         if status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
@@ -286,7 +288,7 @@ def do_instagram_action(insta_user, order):
         raise
 
     except Exception as e:
-        logger.error(f"[Instagram do action]-[{type(e)}]-[Insta_user: {insta_user.username}]-[err: {e}]")
+        logger.error(f"[Instagram do action]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]")
         raise
 
 
@@ -295,22 +297,28 @@ def upload_instagram_post(insta_user, image_field, caption=''):
     microtime = int(datetime.now().timestamp())
 
     headers = {
-        "content-type": "image/jpg",
-        "X-Entity-Name": f"fb_uploader_{microtime}",
-        "Offset": "0",
+        "content-type": "image/jpeg",
+        "offset": "0",
+        "x-entity-type": "image/jpeg",
         "x-entity-length": f"{image_field.size}",
-        "X-Instagram-Rupload-Params": f'{{"media_type": 1, "upload_id": {microtime}, "upload_media_height": {image_field.height}, "upload_media_width": {image_field.width}}}',
+        "x-entity-name": f"fb_uploader_{microtime}",
+        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
     }
     session.headers.update(headers)
-    _s = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
-    _s.raise_for_status()
+    _s1 = session.post(f"{INSTAGRAM_LEGACY_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
+    _s1.raise_for_status()
 
-    body = {
-        'upload_id': f'{microtime}',
-        'caption': caption,
-        'custom_accessibility_caption': '',
-        'retry_timeout': '',
+    session = get_instagram_session(insta_user)
+    headers = {
+        "content-type": "application/x-www-form-urlencoded"
     }
-    session.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
-    _s = session.post(f"{INSTAGRAM_BASE_URL}/create/configure/", data=body)
-    _s.raise_for_status()
+    body = {
+        'upload_id': microtime,
+        'caption': caption,
+        'source_type': 'library',
+        'custom_accessibility_caption': '',
+        'usertags': '',
+    }
+    session.headers.update(headers)
+    _s2 = session.post(f"{INSTAGRAM_LEGACY_BASE_URL}/api/v1/media/configure/", data=body)
+    _s2.raise_for_status()

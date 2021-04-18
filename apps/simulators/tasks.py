@@ -21,6 +21,17 @@ logger = logging.getLogger(__name__)
 MAX_ACTION_EACH_TURN = 6
 
 
+def make_random_sentence():
+    nouns = ["puppy", "car", "rabbit", "girl", "monkey"]
+    verbs = ["runs", "hits", "jumps", "drives", "barfs"]
+    adv = ["crazily.", "dutifully.", "foolishly.", "merrily.", "occasionally."]
+    adj = ["adorable", "clueless", "dirty", "odd", "stupid"]
+
+    _l = (nouns, verbs, adj, adv)
+
+    return ' '.join([random.choice(i) for i in _l])
+
+
 @shared_task()
 def change_profile_picture(insta_user_id):
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
@@ -30,7 +41,10 @@ def change_profile_picture(insta_user_id):
 
     category = random.choice(insta_user_categories)
     img = InstaContentImage.objects.filter(categories=category).order_by('?')[0]
-    change_instagram_profile_pic(insta_user, img.image)
+    try:
+        change_instagram_profile_pic(insta_user, img.image)
+    except Exception as e:
+        logger.warning(f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
 
 
 @shared_task()
@@ -43,7 +57,32 @@ def upload_new_user_post(insta_user_id):
     category = random.choice(insta_user_categories)
     img = InstaContentImage.objects.filter(categories=category).order_by('?')[0]
     cap = InstaContentCaption.objects.filter(categories=category).order_by('?')[0]
-    upload_instagram_post(insta_user, img.image, cap.caption)
+    try:
+        upload_instagram_post(insta_user, img.image, cap.caption)
+    except Exception as e:
+        logger.warning(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
+
+
+@shared_task()
+def comment_new_user_posts(insta_user_id):
+    action = InstaAction.get_action_from_key(InstaAction.ACTION_COMMENT)
+    comment = make_random_sentence()
+    order = dict(action=InstaAction.ACTION_COMMENT, id=0, comments=[comment])
+    insta_user = InstaUser.objects.get(user_id=insta_user_id)
+    insta_user_posts = get_instagram_profile_posts(insta_user, insta_user.username)
+
+    active_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_COMMENT).order_by('?')[:MAX_ACTION_EACH_TURN]
+    for active_user in active_users:
+        # random_posts = [i["id"] for i in random.choices(insta_user_posts, k=min(1, len(insta_user_posts)//3))]
+        random_posts = insta_user_posts
+        for data in random_posts:
+            order['entity_id'] = data['node']['id']
+            try:
+                do_instagram_action(active_user, order)
+            except Exception as e:
+                logger.warning(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[comment: {comment}]-[{type(e)}]-[err: {e}]")
+                continue
+            time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
 
 @shared_task()
@@ -53,7 +92,7 @@ def like_new_user_posts(insta_user_id):
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
     insta_user_posts = get_instagram_profile_posts(insta_user, insta_user.username)
 
-    active_users = InstaUser.objects.live().exclude(blocked_data__has_key=InstaAction.ACTION_LIKE).order_by('?')[:MAX_ACTION_EACH_TURN]
+    active_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_LIKE).order_by('?')[:MAX_ACTION_EACH_TURN]
     for active_user in active_users:
         # random_posts = [i["id"] for i in random.choices(insta_user_posts, k=min(1, len(insta_user_posts)//3))]
         random_posts = insta_user_posts
@@ -120,18 +159,20 @@ def follow_active_users(insta_user_id):
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
 
-@periodic_task(run_every=crontab(minute='*/30'))
+@periodic_task(run_every=crontab(minute='*/10'))
 def random_follow_task():
     new_insta_user_ids = InstaUser.objects.new().filter(
         # created_time__hour=random.randint(0, 24)
     ).values_list('user_id', flat=True).order_by('?')[:3]
 
-    action_to_call = globals()[random.choice((
-        'follow_suggested',
-        'follow_new_user',
-        'follow_active_users',
-        'change_profile_picture',
-        'upload_new_user_post',
-    ))]
     for insta_user_id in new_insta_user_ids:
+        action_to_call = globals()[random.choice((
+            'follow_suggested',
+            # 'follow_new_user',
+            'follow_active_users',
+            'like_new_user_posts',
+            'comment_new_user_posts',
+            # 'change_profile_picture',
+            'upload_new_user_post',
+        ))]
         action_to_call.delay(insta_user_id)

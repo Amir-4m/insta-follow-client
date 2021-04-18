@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 INSTA_USER_LOCK_KEY = "insta_lock_%s"
 
 
-@periodic_task(run_every=crontab(minute='*/3'))
+@periodic_task(run_every=crontab(minute='*/6'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
@@ -42,7 +42,7 @@ def insta_user_action():
         logger.debug(f'retrieved {len(orders)} - {[o["id"] for o in orders]} - for user: {insta_user.username}')
 
         cache.set(_ck, True, 300)
-        do_orders.delay(insta_user.id, orders, action_str)
+        do_orders.delay(insta_user.id, orders, action_key)
 
 
 @shared_task
@@ -60,7 +60,7 @@ def do_orders(insta_user_id, orders, action):
         else:
             insta_follow_order_done(insta_user, order['id'])
             all_done.append(True)
-        time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
+        time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{InstaAction.get_action_from_key(action)}"])
 
     if all(all_done):
         insta_user.remove_blocked(action)
@@ -121,11 +121,15 @@ def reactivate_disabled_insta_users():
 
 @periodic_task(run_every=crontab(minute='0', hour='0'))
 def cleanup_disabled_insta_users():
-    insta_users = InstaUser.objects.filter(
+    InstaUser.objects.filter(
         Q(status=InstaUser.STATUS_DISABLED) | Q(status=InstaUser.STATUS_LOGIN_FAILED),
-        updated_time__lt=timezone.now() - timezone.timedelta(days=30)
-    )
+        updated_time__lt=timezone.now() - timezone.timedelta(days=3)
+    ).update(status=InstaUser.STATUS_REMOVED)
 
+    insta_users = InstaUser.objects.filter(
+        status=InstaUser.STATUS_REMOVED,
+        updated_time__lt=timezone.now() - timezone.timedelta(days=10)
+    )
     for insta_user in insta_users:
         if insta_user.session:
             session = get_instagram_session(insta_user)
