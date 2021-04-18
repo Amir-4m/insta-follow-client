@@ -8,4 +8,3 @@ pycrypto==2.6.1
 pid~=3.0
 pillow
 fake-useragent==0.1.11
-essential_generators

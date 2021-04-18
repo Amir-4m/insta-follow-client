@@ -173,6 +173,6 @@ def random_follow_task():
             'like_new_user_posts',
             'comment_new_user_posts',
             # 'change_profile_picture',
-            'upload_new_user_post',
+            # 'upload_new_user_post',
         ))]
         action_to_call.delay(insta_user_id)

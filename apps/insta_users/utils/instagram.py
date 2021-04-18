@@ -25,7 +25,7 @@ INSTAGRAM_LEGACY_BASE_URL = 'https://i.instagram.com'
 #     'android_release': '4.3'
 # }
 # USER_AGENT = f'Instagram 10.26.0 Android ({android_version}/{android_release}; 320dpi; 720x1280; {manufacturer}; {model}; armani; qcom; en_US)'
-INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; samsung; SM-A650G; SM-A650G; Snapdragon 450; en_US)"
+INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; Samsung; SM-A650G; Snapdragon 450; en_US)"
 
 ua = UserAgent()
 
@@ -36,19 +36,22 @@ class InstagramMediaClosed(Exception):
 
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
+    insta_user.set_proxy(session)
 
     user_agent = ua.random
     # user_agent = INSTAGRAM_USER_AGENT
     session.headers = {
-        'referer': INSTAGRAM_BASE_URL,
-        'user-agent': user_agent,
+        'Referer': f"{INSTAGRAM_BASE_URL}/accounts/login/",
+        'User-Agent': user_agent,
+        "Content-Type": "application/x-www-form-urlencoded",
         # 'content-type': 'application/x-www-form-urlencode',
         # 'referer': 'https://www.instagram.com/accounts/login/',
     }
 
     resp = session.get(INSTAGRAM_BASE_URL)
-    session.headers.update({'X-CSRFToken': resp.cookies['csrftoken']})
-    insta_user.set_proxy(session)
+    session.headers.update({
+        "X-CSRFToken": resp.cookies['csrftoken'],
+    })
 
     login_data = {'username': insta_user.username, 'enc_password': f'#PWD_INSTAGRAM_BROWSER:0:{datetime.now().timestamp()}:{insta_user.password}'}
     login_resp = session.post(f"{INSTAGRAM_BASE_URL}/accounts/login/ajax/", data=login_data, allow_redirects=True)
