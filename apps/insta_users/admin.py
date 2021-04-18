@@ -25,7 +25,14 @@ class InstaUserAdmin(admin.ModelAdmin):
     raw_id_fields = ('proxy',)
     filter_horizontal = ('categories',)
     readonly_fields = ('blocked_data',)
-    actions = ('make_active', 'make_disable', 'remove_block')
+
+    def get_actions(self, request):
+        self.actions = ('make_active', 'make_disable')
+
+        if request.user.is_superuser:
+            self.actions = ('make_active', 'make_disable', 'remove_block')
+        return super().get_actions(request)
+
 
     @admin.display
     def blocked(self, obj):
@@ -39,7 +46,7 @@ class InstaUserAdmin(admin.ModelAdmin):
     def make_disable(self, request, queryset):
         queryset.update(status=InstaUser.STATUS_DISABLED)
 
-    @admin.action(description=_('Remove selected block.'))
+    @admin.action(description=_('Remove block for selected users.'))
     def remove_block(self, request, queryset):
         for q in queryset:
             q.remove_blocked(request.POST.get('action_unblock'))
