@@ -21,6 +21,8 @@ class FollowBlockFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() == '1':
             return queryset.filter(blocked_data__has_key=InstaAction.ACTION_FOLLOW)
+        if self.value() == '2':
+            return queryset.exclude(blocked_data__has_key=InstaAction.ACTION_FOLLOW)
         return queryset
 
 
@@ -34,6 +36,8 @@ class LikeBlockFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() == '1':
             return queryset.filter(blocked_data__has_key=InstaAction.ACTION_LIKE)
+        if self.value() == '2':
+            return queryset.exclude(blocked_data__has_key=InstaAction.ACTION_LIKE)
         return queryset
 
 
@@ -47,6 +51,8 @@ class CommentBlockFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() == '1':
             return queryset.filter(blocked_data__has_key=InstaAction.ACTION_COMMENT)
+        if self.value() == '2':
+            return queryset.exclude(blocked_data__has_key=InstaAction.ACTION_COMMENT)
         return queryset
 
 
