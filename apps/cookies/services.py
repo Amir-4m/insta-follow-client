@@ -1,5 +1,6 @@
 import logging
 
+from fake_useragent import UserAgent
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,7 +11,9 @@ logger = logging.getLogger(__name__)
 
 class SeleniumService(object):
     def __init__(self):
-        self.driver = webdriver.Firefox()
+        self.profile = webdriver.FirefoxProfile()
+        self.profile.set_preference("general.useragent.override", UserAgent().random)
+        self.driver = webdriver.Firefox(firefox_profile=self.profile)
         self.login_url = 'https://www.instagram.com/accounts/login/'
         self.wait = WebDriverWait(self.driver, 10)
 
