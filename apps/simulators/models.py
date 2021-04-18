@@ -37,3 +37,21 @@ class InstaContentCaption(InstaContent):
         db_table = 'insta_captions'
         verbose_name = _('Insta Caption')
         verbose_name_plural = _('Insta Captions')
+
+
+class InstaProfileImage(InstaContent):
+    image = models.ImageField(_('image'), upload_to='profile_images')
+
+    class Meta:
+        db_table = 'insta_profile_images'
+        verbose_name = _('Insta Profile Image')
+        verbose_name_plural = _('Insta Profile Images')
+
+
+class InstaStoryImage(InstaContent):
+    image = models.ImageField(_('image'), upload_to='story_images')
+
+    class Meta:
+        db_table = 'insta_story_images'
+        verbose_name = _('Insta Story Image')
+        verbose_name_plural = _('Insta Story Images')
