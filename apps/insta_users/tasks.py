@@ -11,13 +11,18 @@ from celery.schedules import crontab
 from celery.task import periodic_task
 from celery import shared_task
 
+from fake_useragent import UserAgent
+
 from .models import InstaUser, InstaAction
 from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
 from .utils.instagram import instagram_login, do_instagram_action, get_instagram_session, InstagramMediaClosed, INSTAGRAM_BASE_URL
+from .utils.selenium import SeleniumService
 
 logger = logging.getLogger(__name__)
 
 INSTA_USER_LOCK_KEY = "insta_lock_%s"
+
+ua = UserAgent()
 
 
 @periodic_task(run_every=crontab(minute='*/6'))
@@ -78,7 +83,19 @@ def insta_follow_login_task(insta_user_id):
 @shared_task
 def instagram_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
-    instagram_login(insta_user)
+    # instagram_login(insta_user)
+    user_agent = ua.random
+    session_cookie = SeleniumService(user_agent).get_instagram_session_id(insta_user.username, insta_user.password)
+    if session_cookie:
+        insta_user.session = session_cookie
+        insta_user.user_agent = user_agent
+        insta_user.set_proxy()
+    else:
+        insta_user.status = InstaUser.STATUS_LOGIN_FAILED
+
+    insta_user.save()
+
+    cache.delete(INSTA_USER_LOCK_KEY % insta_user_id)
 
 
 @periodic_task(run_every=crontab(minute='*'))
@@ -90,6 +107,10 @@ def activate_insta_users():
     ).values_list('id', flat=True)
 
     for insta_user_id in no_session_users:
+        _ck = INSTA_USER_LOCK_KEY % insta_user_id
+        if cache.get(_ck):
+            continue
+        cache.set(_ck, True, 300)
         instagram_login_task.delay(insta_user_id)
 
     no_uuid_users = InstaUser.objects.filter(

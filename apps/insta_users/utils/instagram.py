@@ -36,7 +36,7 @@ class InstagramMediaClosed(Exception):
 
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
-    insta_user.set_proxy(session)
+    insta_user.set_session_proxy(session)
 
     user_agent = ua.random
     # user_agent = INSTAGRAM_USER_AGENT
@@ -109,7 +109,7 @@ def get_instagram_session(insta_user):
         'X-Instagram-AJAX': '7e64493c83ae',
     })
     session.cookies.update(user_session)
-    insta_user.set_proxy(session)
+    insta_user.set_session_proxy(session)
 
     return session
 

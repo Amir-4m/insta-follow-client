@@ -1,6 +1,5 @@
 import logging
 
-from fake_useragent import UserAgent
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -11,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 class SeleniumService(object):
 
-    def __init__(self):
+    def __init__(self, user_agent):
         self.profile = webdriver.FirefoxProfile()
-        self.profile.set_preference("general.useragent.override", UserAgent().random)
+        self.profile.set_preference("general.useragent.override", user_agent)
         self.driver = webdriver.Firefox(firefox_profile=self.profile)
         self.login_url = 'https://www.instagram.com/accounts/login/'
         self.wait = WebDriverWait(self.driver, 10)
@@ -55,12 +54,8 @@ class SeleniumService(object):
             # decline saving login info
             self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div/div/button').click()
 
-            # getting session id
-            browser_cookies = self.driver.get_cookies()
-
             # convert cookies from json to browser format
-            for _c in browser_cookies:
-                cookies += f'{_c["name"]}={_c["value"]}; '
+            cookies = "; ".join([f"{_c['name']}={_c['value']}" for _c in self.driver.get_cookies()])
 
         except Exception as e:
             logger.error(f'getting instagram session id for user {username} failed due to: {e}')

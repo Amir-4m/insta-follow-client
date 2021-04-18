@@ -113,17 +113,24 @@ class InstaUser(models.Model):
             self.user_id = self.get_session.get('ds_user_id', None)
         super().save(*args, **kwargs)
 
-    def set_proxy(self, session):
+    def set_session_proxy(self, session):
         if self.proxy is None:
-            self.proxy_id = Proxy.get_proxy()
+            self.set_proxy()
         session.proxies = {self.proxy.protocol: f'{self.proxy.server}:{self.proxy.port}'}
+
+    def set_proxy(self):
+        self.proxy_id = Proxy.get_proxy()
 
     def clear_session(self):
         self.session = ''
         self.proxy = None
 
+    @staticmethod
+    def generate_session_string_from_dict(cookie_dict):
+        return "; ".join([str(x) + "=" + str(y) for x, y in cookie_dict.items()])
+
     def set_session(self, cookie_dict):
-        self.session = "; ".join([str(x) + "=" + str(y) for x, y in cookie_dict.items()])
+        self.session = self.generate_session_string_from_dict(cookie_dict)
 
     @property
     def get_session(self):
