@@ -33,6 +33,7 @@ SECRET_KEY = config("SECRET_KEY")
 # Application definition
 INSTALLED_APPS = [
     # Local
+    'apps.cookies',
     'apps.insta_users',
     'apps.proxies',
     'apps.simulators',
