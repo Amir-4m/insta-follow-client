@@ -25,7 +25,7 @@ def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
 
-        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-2])
+        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-1])
         action_key = action_selected[0]
         action_str = action_selected[1]
 

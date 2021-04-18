@@ -7,53 +7,41 @@ from .models import InstaUser, InstaContentCategory, InstaAction
 
 
 class RemoveBlockActionForm(ActionForm):
-    action_unblock = forms.ChoiceField(
-        choices=InstaAction.ACTION_CHOICES, help_text=_('to remove block for selected action'))
+    unblock = forms.ChoiceField(
+        choices=InstaAction.ACTION_CHOICES,
+        help_text=_('to remove block for selected action')
+    )
 
 
-class FollowBlockFilter(admin.SimpleListFilter):
+class BlockFilter(admin.SimpleListFilter):
+
+    def lookups(self, request, model_admin):
+        return (1, _('Yes')), (2, _('No'))
+
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.filter(blocked_data__has_key=self.action)
+        if self.value() == '2':
+            return queryset.exclude(blocked_data__has_key=self.action)
+        return queryset
+
+
+class FollowBlockFilter(BlockFilter):
     title = _('follow block')
     parameter_name = 'f_b'
-
-    def lookups(self, request, model_admin):
-        return (1, _('yes')), (2, _('no'))
-
-    def queryset(self, request, queryset):
-        if self.value() == '1':
-            return queryset.filter(blocked_data__has_key=InstaAction.ACTION_FOLLOW)
-        if self.value() == '2':
-            return queryset.exclude(blocked_data__has_key=InstaAction.ACTION_FOLLOW)
-        return queryset
+    action = InstaAction.ACTION_FOLLOW
 
 
-class LikeBlockFilter(admin.SimpleListFilter):
+class LikeBlockFilter(BlockFilter):
     title = _('like block')
     parameter_name = 'l_b'
-
-    def lookups(self, request, model_admin):
-        return (1, _('yes')), (2, _('no'))
-
-    def queryset(self, request, queryset):
-        if self.value() == '1':
-            return queryset.filter(blocked_data__has_key=InstaAction.ACTION_LIKE)
-        if self.value() == '2':
-            return queryset.exclude(blocked_data__has_key=InstaAction.ACTION_LIKE)
-        return queryset
+    action = InstaAction.ACTION_LIKE
 
 
-class CommentBlockFilter(admin.SimpleListFilter):
+class CommentBlockFilter(BlockFilter):
     title = _('comment block')
     parameter_name = 'c_b'
-
-    def lookups(self, request, model_admin):
-        return (1, _('yes')), (2, _('no'))
-
-    def queryset(self, request, queryset):
-        if self.value() == '1':
-            return queryset.filter(blocked_data__has_key=InstaAction.ACTION_COMMENT)
-        if self.value() == '2':
-            return queryset.exclude(blocked_data__has_key=InstaAction.ACTION_COMMENT)
-        return queryset
+    action = InstaAction.ACTION_COMMENT
 
 
 @admin.register(InstaContentCategory)
@@ -65,17 +53,18 @@ class CategoryAdmin(admin.ModelAdmin):
 class InstaUserAdmin(admin.ModelAdmin):
     action_form = RemoveBlockActionForm
     list_display = ("username", "created_time", "updated_time", "user_id", "status", "blocked", "proxy", "server_key")
-    list_filter = ("status", "created_time", FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
+    list_filter = ("status", FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
+    date_hierarchy = "created_time"
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
     filter_horizontal = ('categories',)
     readonly_fields = ('blocked_data',)
 
     def get_actions(self, request):
-        self.actions = ('make_active', 'make_disable')
+        self.actions = ('make_active', )
 
         if request.user.is_superuser:
-            self.actions = ('make_active', 'make_disable', 'remove_block')
+            self.actions = ('make_active', 'remove_block')
         return super().get_actions(request)
 
     @admin.display
@@ -86,11 +75,7 @@ class InstaUserAdmin(admin.ModelAdmin):
     def make_active(self, request, queryset):
         queryset.update(status=InstaUser.STATUS_ACTIVE)
 
-    @admin.action(description=_('Mark selected as Disabled.'))
-    def make_disable(self, request, queryset):
-        queryset.update(status=InstaUser.STATUS_DISABLED)
-
     @admin.action(description=_('Remove block for selected users.'))
     def remove_block(self, request, queryset):
         for q in queryset:
-            q.remove_blocked(request.POST.get('action_unblock'))
+            q.remove_blocked(request.POST.get('unblock'))

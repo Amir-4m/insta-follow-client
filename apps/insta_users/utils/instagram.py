@@ -308,7 +308,7 @@ def upload_instagram_post(insta_user, image_field, caption=''):
         "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
     }
     session.headers.update(headers)
-    _s1 = session.post(f"{INSTAGRAM_LEGACY_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
+    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
     _s1.raise_for_status()
 
     session = get_instagram_session(insta_user)
@@ -323,5 +323,5 @@ def upload_instagram_post(insta_user, image_field, caption=''):
         'usertags': '',
     }
     session.headers.update(headers)
-    _s2 = session.post(f"{INSTAGRAM_LEGACY_BASE_URL}/api/v1/media/configure/", data=body)
+    _s2 = session.post(f"{INSTAGRAM_BASE_URL}/api/v1/media/configure/", data=body)
     _s2.raise_for_status()
