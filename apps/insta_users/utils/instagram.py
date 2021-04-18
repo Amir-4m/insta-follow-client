@@ -325,3 +325,35 @@ def upload_instagram_post(insta_user, image_field, caption=''):
     session.headers.update(headers)
     _s2 = session.post(f"{INSTAGRAM_LEGACY_BASE_URL}/api/v1/media/configure/", data=body)
     _s2.raise_for_status()
+
+
+def upload_instagram_story(insta_user, image_field):
+    session = get_instagram_session(insta_user)
+    microtime = int(datetime.now().timestamp())
+
+    headers = {
+        "content-type": "image/jpeg",
+        "offset": "0",
+        "x-entity-type": "image/jpeg",
+        "x-entity-length": f"{image_field.size}",
+        "x-entity-name": f"fb_uploader_{microtime}",
+        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
+    }
+    session.headers.update(headers)
+    _s1 = session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
+                       data=open(image_field.path, 'rb'))
+    _s1.raise_for_status()
+
+    session = get_instagram_session(insta_user)
+    headers = {
+        "content-type": "application/x-www-form-urlencoded"
+    }
+    body = {
+        'upload_id': microtime,
+        'source_type': 'library',
+        'custom_accessibility_caption': '',
+        'usertags': '',
+    }
+    session.headers.update(headers)
+    _s2 = session.post('https://www.instagram.com/create/configure_to_story/', data=body)
+    _s2.raise_for_status()

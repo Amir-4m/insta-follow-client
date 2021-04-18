@@ -8,12 +8,12 @@ from celery import shared_task
 from celery.schedules import crontab
 from celery.task import periodic_task
 
-from .models import InstaContentImage, InstaContentCaption
+from .models import InstaContentImage, InstaContentCaption, InstaProfileImage, InstaStoryImage
 from apps.insta_users.models import InstaUser, InstaAction
 from apps.insta_users.utils.instagram import (
     do_instagram_action, upload_instagram_post,
     get_instagram_suggested_follows, get_instagram_profile_posts,
-    change_instagram_profile_pic,
+    change_instagram_profile_pic, upload_instagram_story,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def change_profile_picture(insta_user_id):
         return
 
     category = random.choice(insta_user_categories)
-    img = InstaContentImage.objects.filter(categories=category).order_by('?')[0]
+    img = InstaProfileImage.objects.filter(categories=category).order_by('?')[0]
     try:
         change_instagram_profile_pic(insta_user, img.image)
     except Exception as e:
@@ -176,3 +176,18 @@ def random_follow_task():
             # 'upload_new_user_post',
         ))]
         action_to_call.delay(insta_user_id)
+
+
+@shared_task()
+def upload_new_user_story(insta_user_id):
+    insta_user = InstaUser.objects.get(user_id=insta_user_id)
+    insta_user_categories = list(insta_user.categories.all())
+    if not insta_user_categories:
+        return
+
+    category = random.choice(insta_user_categories)
+    img = InstaStoryImage.objects.filter(categories=category).order_by('?')[0]
+    try:
+        upload_instagram_story(insta_user, img.image)
+    except Exception as e:
+        logger.warning(f"[Simulator upload_new_user_story]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
