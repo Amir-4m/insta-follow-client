@@ -11,6 +11,45 @@ class RemoveBlockActionForm(ActionForm):
         choices=InstaAction.ACTION_CHOICES, help_text=_('to remove block for selected action'))
 
 
+class FollowBlockFilter(admin.SimpleListFilter):
+    title = _('follow block')
+    parameter_name = 'f_b'
+
+    def lookups(self, request, model_admin):
+        return (1, _('yes')), (2, _('no'))
+
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.filter(blocked_data__has_key=InstaAction.ACTION_FOLLOW)
+        return queryset
+
+
+class LikeBlockFilter(admin.SimpleListFilter):
+    title = _('like block')
+    parameter_name = 'l_b'
+
+    def lookups(self, request, model_admin):
+        return (1, _('yes')), (2, _('no'))
+
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.filter(blocked_data__has_key=InstaAction.ACTION_LIKE)
+        return queryset
+
+
+class CommentBlockFilter(admin.SimpleListFilter):
+    title = _('comment block')
+    parameter_name = 'c_b'
+
+    def lookups(self, request, model_admin):
+        return (1, _('yes')), (2, _('no'))
+
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.filter(blocked_data__has_key=InstaAction.ACTION_COMMENT)
+        return queryset
+
+
 @admin.register(InstaContentCategory)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_time')
@@ -20,7 +59,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class InstaUserAdmin(admin.ModelAdmin):
     action_form = RemoveBlockActionForm
     list_display = ("username", "created_time", "updated_time", "user_id", "status", "blocked", "proxy", "server_key")
-    list_filter = ("status", "created_time")
+    list_filter = ("status", "created_time", FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
     filter_horizontal = ('categories',)
@@ -32,7 +71,6 @@ class InstaUserAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             self.actions = ('make_active', 'make_disable', 'remove_block')
         return super().get_actions(request)
-
 
     @admin.display
     def blocked(self, obj):
