@@ -34,6 +34,10 @@ class InstagramMediaClosed(Exception):
     pass
 
 
+class InstagramActionFailed(Exception):
+    pass
+
+
 def instagram_login(insta_user, commit=True):
     session = requests.Session()
     insta_user.set_session_proxy(session)
@@ -267,7 +271,7 @@ def do_instagram_action(insta_user, order):
         except:
             result = {}
 
-        if status_code == requests.codes.ok and result.get('status', '') != 'ok':
+        if status_code == requests.codes.ok and result.get('status', '') == 'ok':
             return
 
         logger.warning(f"[Instagram do action]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-"
@@ -300,13 +304,16 @@ def do_instagram_action(insta_user, order):
             insta_user.clear_session()
 
         insta_user.save()
-        raise Exception('HTTP Error')
+        raise InstagramActionFailed(f"{status_code} - {result}")
 
     # except requests.exceptions.ConnectionError:
     #     proxy = insta_user.proxy
     #     proxy.is_enable = False
     #     proxy.save()
     #     raise
+
+    except InstagramActionFailed:
+        raise
 
     except InstagramMediaClosed as e:
         logger.warning(f"[Instagram do action]-[MediaClosed]-[action: {order['action']}]-[order: {order['link']}]-[err: {e}]")
