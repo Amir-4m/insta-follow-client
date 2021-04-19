@@ -2,6 +2,7 @@ import logging
 import requests
 import random
 from json.decoder import JSONDecodeError
+from urllib.parse import urlparse
 
 from datetime import datetime
 
@@ -357,3 +358,26 @@ def upload_instagram_story(insta_user, image_field):
     session.headers.update(headers)
     _s2 = session.post('https://www.instagram.com/create/configure_to_story/', data=body)
     _s2.raise_for_status()
+
+
+def has_profile(insta_user, insta_user_id):
+    session = get_instagram_session(insta_user)
+    default_avatar = '44884218_345707102882519_2446069589734326272_n.jpg'
+
+    params = dict(
+        query_hash='d4d88dc1500312af6f937f7b804c68c3',
+        variables='{"user_id": ' f'"{insta_user_id}", "include_chaining": true, "include_reel": true,'
+                   '"include_suggested_users": false, "include_logged_out_extras": false,'
+                   '"include_highlight_reels": false, "include_live_status": true}'
+    )
+
+    try:
+        resp = session.get(INSTAGRAM_GRAPHQL_URL, params=params)
+        profile_pic_url = urlparse(resp.json()['data']['user']['reel']['user']['profile_pic_url'])
+
+        return False if default_avatar in profile_pic_url.path else True
+    except:
+        result = False
+
+    return result
+
