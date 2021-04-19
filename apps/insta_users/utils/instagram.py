@@ -277,6 +277,10 @@ def do_instagram_action(insta_user, order):
         logger.warning(f"[Instagram do action]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-"
                        f"[order: {order['entity_id']}]-[status code: {status_code}]-[header: {session.headers}]-[proxy: {session.proxies}]-[body: {result}]")
 
+        if status_code == requests.codes.ok and 'ds_user_id' not in _s.cookies.get_dict():
+            insta_user.status = insta_user.STATUS_DISABLED
+            insta_user.clear_session()
+
         if status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
             insta_user.proxy_id = Proxy.get_proxy()
