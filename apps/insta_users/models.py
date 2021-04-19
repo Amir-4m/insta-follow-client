@@ -97,7 +97,7 @@ class InstaUser(models.Model):
 
     blocked_data = models.JSONField(_('blocked data'), default=dict, editable=False)
 
-    categories = models.ManyToManyField(InstaContentCategory, blank=True)
+    categories = models.ManyToManyField(InstaContentCategory)
 
     objects = LiveManager()
 

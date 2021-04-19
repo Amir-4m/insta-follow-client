@@ -18,7 +18,7 @@ from apps.insta_users.utils.instagram import (
 
 logger = logging.getLogger(__name__)
 
-MAX_ACTION_EACH_TURN = 6
+MAX_ACTION_EACH_TURN = 3
 
 
 def make_random_sentence():
@@ -64,6 +64,21 @@ def upload_new_user_post(insta_user_id):
 
 
 @shared_task()
+def upload_new_user_story(insta_user_id):
+    insta_user = InstaUser.objects.get(user_id=insta_user_id)
+    insta_user_categories = list(insta_user.categories.all())
+    if not insta_user_categories:
+        return
+
+    category = random.choice(insta_user_categories)
+    img = InstaStoryImage.objects.filter(categories=category).order_by('?')[0]
+    try:
+        upload_instagram_story(insta_user, img.image)
+    except Exception as e:
+        logger.warning(f"[Simulator upload_new_user_story]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
+
+
+@shared_task()
 def comment_new_user_posts(insta_user_id):
     action = InstaAction.get_action_from_key(InstaAction.ACTION_COMMENT)
     comment = make_random_sentence()
@@ -77,11 +92,12 @@ def comment_new_user_posts(insta_user_id):
         random_posts = insta_user_posts
         for data in random_posts:
             order['entity_id'] = data['node']['id']
+            logger.debug(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[order: {order['entity_id']}]-[comment: {comment}]")
             try:
                 do_instagram_action(active_user, order)
             except Exception as e:
                 logger.warning(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[comment: {comment}]-[{type(e)}]-[err: {e}]")
-                continue
+                break
             time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
 
@@ -98,11 +114,12 @@ def like_new_user_posts(insta_user_id):
         random_posts = insta_user_posts
         for data in random_posts:
             order['entity_id'] = data['node']['id']
+            logger.debug(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[order: {order['entity_id']}]")
             try:
                 do_instagram_action(active_user, order)
             except Exception as e:
                 logger.warning(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[{type(e)}]-[err: {e}]")
-                continue
+                break
             time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
 
@@ -159,35 +176,20 @@ def follow_active_users(insta_user_id):
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
 
-@periodic_task(run_every=crontab(minute='*/10'))
-def random_follow_task():
+@periodic_task(run_every=crontab(minute='*/20'))
+def random_task():
     new_insta_user_ids = InstaUser.objects.new().filter(
         # created_time__hour=random.randint(0, 24)
-    ).values_list('user_id', flat=True).order_by('?')[:3]
+    ).values_list('user_id', flat=True).order_by('?')[:4]
 
     for insta_user_id in new_insta_user_ids:
         action_to_call = globals()[random.choice((
             'follow_suggested',
-            # 'follow_new_user',
+            'follow_new_user',
             'follow_active_users',
             'like_new_user_posts',
             'comment_new_user_posts',
             # 'change_profile_picture',
-            'upload_new_user_post',
+            # 'upload_new_user_post',
         ))]
         action_to_call.delay(insta_user_id)
-
-
-@shared_task()
-def upload_new_user_story(insta_user_id):
-    insta_user = InstaUser.objects.get(user_id=insta_user_id)
-    insta_user_categories = list(insta_user.categories.all())
-    if not insta_user_categories:
-        return
-
-    category = random.choice(insta_user_categories)
-    img = InstaStoryImage.objects.filter(categories=category).order_by('?')[0]
-    try:
-        upload_instagram_story(insta_user, img.image)
-    except Exception as e:
-        logger.warning(f"[Simulator upload_new_user_story]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")

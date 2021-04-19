@@ -121,13 +121,12 @@ def activate_insta_users():
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
 
-    # TODO: uncomment
-    # InstaUser.objects.filter(
-    #     status=InstaUser.STATUS_NEW,
-    #     created_time__lt=timezone.now() - timezone.timedelta(days=3)
-    # ).update(
-    #     status=InstaUser.STATUS_ACTIVE
-    # )
+    InstaUser.objects.filter(
+        status=InstaUser.STATUS_NEW,
+        created_time__lt=timezone.now() - timezone.timedelta(days=3)
+    ).update(
+        status=InstaUser.STATUS_ACTIVE
+    )
 
 
 @periodic_task(run_every=crontab(minute='*/15'))

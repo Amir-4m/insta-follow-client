@@ -227,7 +227,7 @@ def do_instagram_comment(session, entity_id, comment):
 
 
 def do_instagram_action(insta_user, order):
-    logger.debug(f"[Instagram do action]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['id']}]")
+    logger.debug(f"[Instagram do action]-[insta_user: {insta_user.username}]-[action: {order['action']}]-[order: {order['entity_id']}]")
 
     try:
         session = get_instagram_session(insta_user)
