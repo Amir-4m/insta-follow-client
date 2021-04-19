@@ -12,8 +12,35 @@ class InstaContent(models.Model):
         abstract = True
 
 
-class InstaContentImage(InstaContent):
+class InstaImageManager(models.Manager):
+
+    def posts(self):
+        return super().get_queryset().filter(content_type=InstaImage.TYPE_POST)
+
+    def stories(self):
+        return super().get_queryset().filter(content_type=InstaImage.TYPE_STORY)
+
+    def profiles(self):
+        return super().get_queryset().filter(content_type=InstaImage.TYPE_PROFILE)
+
+
+class InstaImage(InstaContent):
+    TYPE_POST = "post"
+    TYPE_STORY = "story"
+    TYPE_PROFILE = "profile"
+
+    CONTENT_TYPE_CHOICES = (
+        (TYPE_POST, _("post")),
+        (TYPE_STORY, _("story")),
+        (TYPE_PROFILE, _("profile")),
+    )
+
     image = models.ImageField(_('image'), upload_to='images')
+    caption = models.TextField(_('caption'), blank=True)
+
+    content_type = models.CharField(_("type"), max_length=8, choices=CONTENT_TYPE_CHOICES, db_index=True)
+
+    objects = InstaImageManager()
 
     class Meta:
         db_table = 'insta_images'
@@ -21,37 +48,11 @@ class InstaContentImage(InstaContent):
         verbose_name_plural = _('Insta Images')
 
 
-class InstaContentVideo(InstaContent):
+class InstaVideo(InstaContent):
     video = models.FileField(_('video'), upload_to='videos')
+    caption = models.TextField(_('caption'), blank=True)
 
     class Meta:
         db_table = 'insta_videos'
         verbose_name = _('Insta Video')
         verbose_name_plural = _('Insta Videos')
-
-
-class InstaContentCaption(InstaContent):
-    caption = models.TextField(_('caption'))
-
-    class Meta:
-        db_table = 'insta_captions'
-        verbose_name = _('Insta Caption')
-        verbose_name_plural = _('Insta Captions')
-
-
-class InstaProfileImage(InstaContent):
-    image = models.ImageField(_('image'), upload_to='profile_images')
-
-    class Meta:
-        db_table = 'insta_profile_images'
-        verbose_name = _('Insta Profile Image')
-        verbose_name_plural = _('Insta Profile Images')
-
-
-class InstaStoryImage(InstaContent):
-    image = models.ImageField(_('image'), upload_to='story_images')
-
-    class Meta:
-        db_table = 'insta_story_images'
-        verbose_name = _('Insta Story Image')
-        verbose_name_plural = _('Insta Story Images')

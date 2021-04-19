@@ -8,12 +8,13 @@ from celery import shared_task
 from celery.schedules import crontab
 from celery.task import periodic_task
 
-from .models import InstaContentImage, InstaContentCaption, InstaProfileImage, InstaStoryImage
+from .models import InstaImage
 from apps.insta_users.models import InstaUser, InstaAction
 from apps.insta_users.utils.instagram import (
-    do_instagram_action, upload_instagram_post,
+    get_instagram_session, do_instagram_action,
     get_instagram_suggested_follows, get_instagram_profile_posts,
-    change_instagram_profile_pic, upload_instagram_story,
+    has_instagram_profile_picture, change_instagram_profile_pic,
+    upload_instagram_post, upload_instagram_story,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,9 +41,11 @@ def change_profile_picture(insta_user_id):
         return
 
     category = random.choice(insta_user_categories)
-    img = InstaProfileImage.objects.filter(categories=category).order_by('?')[0]
+    content = InstaImage.objects.profiles().filter(categories=category).order_by('?')[0]
     try:
-        change_instagram_profile_pic(insta_user, img.image)
+        session = get_instagram_session(insta_user)
+        if has_instagram_profile_picture(insta_user, session) is False:
+            change_instagram_profile_pic(insta_user, content.image, session)
     except Exception as e:
         logger.warning(f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
 
@@ -55,10 +58,9 @@ def upload_new_user_post(insta_user_id):
         return
 
     category = random.choice(insta_user_categories)
-    img = InstaContentImage.objects.filter(categories=category).order_by('?')[0]
-    cap = InstaContentCaption.objects.filter(categories=category).order_by('?')[0]
+    post = InstaImage.objects.posts().filter(categories=category).order_by('?')[0]
     try:
-        upload_instagram_post(insta_user, img.image, cap.caption)
+        upload_instagram_post(insta_user, post.image, post.caption)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
 
@@ -71,9 +73,9 @@ def upload_new_user_story(insta_user_id):
         return
 
     category = random.choice(insta_user_categories)
-    img = InstaStoryImage.objects.filter(categories=category).order_by('?')[0]
+    content = InstaImage.objects.stories().filter(categories=category).order_by('?')[0]
     try:
-        upload_instagram_story(insta_user, img.image)
+        upload_instagram_story(insta_user, content.image)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_story]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
 
@@ -84,7 +86,7 @@ def comment_new_user_posts(insta_user_id):
     comment = make_random_sentence()
     order = dict(action=InstaAction.ACTION_COMMENT, id=0, comments=[comment])
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
-    insta_user_posts = get_instagram_profile_posts(insta_user, insta_user.username)
+    insta_user_posts = get_instagram_profile_posts(insta_user)
 
     active_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_COMMENT).order_by('?')[:MAX_ACTION_EACH_TURN]
     for active_user in active_users:
@@ -106,7 +108,7 @@ def like_new_user_posts(insta_user_id):
     action = InstaAction.get_action_from_key(InstaAction.ACTION_LIKE)
     order = dict(action=InstaAction.ACTION_LIKE, id=0)
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
-    insta_user_posts = get_instagram_profile_posts(insta_user, insta_user.username)
+    insta_user_posts = get_instagram_profile_posts(insta_user)
 
     active_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_LIKE).order_by('?')[:MAX_ACTION_EACH_TURN]
     for active_user in active_users:
@@ -184,12 +186,13 @@ def random_task():
 
     for insta_user_id in new_insta_user_ids:
         action_to_call = globals()[random.choice((
-            'follow_suggested',
-            'follow_new_user',
-            'follow_active_users',
-            'like_new_user_posts',
-            'comment_new_user_posts',
+            # 'follow_suggested',
+            # 'follow_new_user',
+            # 'follow_active_users',
+            # 'like_new_user_posts',
+            # 'comment_new_user_posts',
             # 'change_profile_picture',
             # 'upload_new_user_post',
+            'upload_new_user_story',
         ))]
-        action_to_call.delay(insta_user_id)
+        action_to_call(insta_user_id)

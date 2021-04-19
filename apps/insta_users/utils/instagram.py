@@ -2,7 +2,6 @@ import logging
 import requests
 import random
 from json.decoder import JSONDecodeError
-from urllib.parse import urlparse
 
 from datetime import datetime
 
@@ -148,15 +147,54 @@ def check_instagram_entity(session, order):
         logger.warning(f"[Instagram entity check]-[KeyError]-[action: {order['action']}]-[order: {order['id']}]-[err: {e}]")
 
 
-def get_instagram_profile_posts(insta_user, insta_username):
-    session = get_instagram_session(insta_user)
+def has_instagram_profile_picture(insta_user, session=None):
+    if session is None:
+        session = get_instagram_session(insta_user)
 
-    profile_link = f"{INSTAGRAM_BASE_URL}/{insta_username}/"
+    has_picture_key = "s150x150"
+
+    profile_link = f"{INSTAGRAM_BASE_URL}/{insta_user.username}/"
+    params = dict(__a=1)
+    try:
+        resp = session.get(profile_link, params=params)
+        profile_pic_url = resp.json()['graphql']['user']['profile_pic_url']
+        result = has_picture_key in profile_pic_url.path
+    except Exception as e:
+        logger.warning(f"[Instagram check profile pic]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]")
+        return
+
+    return result
+
+
+def change_instagram_profile_pic(insta_user, image_field, session=None):
+    if session is None:
+        session = get_instagram_session(insta_user)
+
+    files = {
+        "profile_pic": open(image_field.path, 'rb')
+    }
+    data = {
+        "Content-Disposition": "form-data",
+        "Content-Type": "image/jpeg",
+        "name": "profile_pic",
+        "filename": image_field.name.split('/')[-1],
+    }
+
+    _s = session.post(f"{INSTAGRAM_BASE_URL}/accounts/web_change_profile_picture/", files=files, data=data)
+    _s.raise_for_status()
+
+
+def get_instagram_profile_posts(insta_user, session=None):
+    if session is None:
+        session = get_instagram_session(insta_user)
+
+    profile_link = f"{INSTAGRAM_BASE_URL}/{insta_user.username}/"
     params = dict(__a=1)
     try:
         resp = session.get(profile_link, params=params)
         result = resp.json()['graphql']['user']['edge_owner_to_timeline_media']['edges']
-    except:
+    except Exception as e:
+        logger.warning(f"[Instagram get posts]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]")
         result = []
 
     return result
@@ -192,23 +230,6 @@ def get_instagram_suggested_follows(insta_user):
         result = []
 
     return result
-
-
-def change_instagram_profile_pic(insta_user, image_field):
-    session = get_instagram_session(insta_user)
-
-    files = {
-        "profile_pic": open(image_field.path, 'rb')
-    }
-    data = {
-        "Content-Disposition": "form-data",
-        "Content-Type": "image/jpeg",
-        "name": "profile_pic",
-        "filename": image_field.name.split('/')[-1],
-    }
-
-    _s = session.post(f"{INSTAGRAM_BASE_URL}/accounts/web_change_profile_picture/", files=files, data=data)
-    _s.raise_for_status()
 
 
 def do_instagram_like(session, entity_id):
@@ -358,26 +379,3 @@ def upload_instagram_story(insta_user, image_field):
     session.headers.update(headers)
     _s2 = session.post('https://www.instagram.com/create/configure_to_story/', data=body)
     _s2.raise_for_status()
-
-
-def has_profile(insta_user, insta_user_id):
-    session = get_instagram_session(insta_user)
-    default_avatar = '44884218_345707102882519_2446069589734326272_n.jpg'
-
-    params = dict(
-        query_hash='d4d88dc1500312af6f937f7b804c68c3',
-        variables='{"user_id": ' f'"{insta_user_id}", "include_chaining": true, "include_reel": true,'
-                   '"include_suggested_users": false, "include_logged_out_extras": false,'
-                   '"include_highlight_reels": false, "include_live_status": true}'
-    )
-
-    try:
-        resp = session.get(INSTAGRAM_GRAPHQL_URL, params=params)
-        profile_pic_url = urlparse(resp.json()['data']['user']['reel']['user']['profile_pic_url'])
-
-        return False if default_avatar in profile_pic_url.path else True
-    except:
-        result = False
-
-    return result
-
