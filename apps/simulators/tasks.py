@@ -58,9 +58,9 @@ def upload_new_user_post(insta_user_id):
         return
 
     category = random.choice(insta_user_categories)
-    post = InstaImage.objects.posts().filter(categories=category).order_by('?')[0]
+    content = InstaImage.objects.posts().filter(categories=category).order_by('?')[0]
     try:
-        upload_instagram_post(insta_user, post.image, post.caption)
+        upload_instagram_post(insta_user, content.image, content.caption)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
 
@@ -178,7 +178,7 @@ def follow_active_users(insta_user_id):
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
 
-@periodic_task(run_every=crontab(minute='*/20'))
+# @periodic_task(run_every=crontab(minute='*/20'))
 def random_task():
     new_insta_user_ids = InstaUser.objects.new().filter(
         # created_time__hour=random.randint(0, 24)
@@ -186,13 +186,13 @@ def random_task():
 
     for insta_user_id in new_insta_user_ids:
         action_to_call = globals()[random.choice((
-            # 'follow_suggested',
-            # 'follow_new_user',
-            # 'follow_active_users',
-            # 'like_new_user_posts',
-            # 'comment_new_user_posts',
-            # 'change_profile_picture',
-            # 'upload_new_user_post',
+            'follow_suggested',
+            'follow_new_user',
+            'follow_active_users',
+            'like_new_user_posts',
+            'comment_new_user_posts',
+            'change_profile_picture',
+            'upload_new_user_post',
             'upload_new_user_story',
         ))]
         action_to_call(insta_user_id)

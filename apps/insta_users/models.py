@@ -123,6 +123,7 @@ class InstaUser(models.Model):
 
     def clear_session(self):
         self.session = ''
+        self.user_agent = ''
         self.proxy = None
 
     @staticmethod

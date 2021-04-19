@@ -141,7 +141,7 @@ def check_instagram_entity(session, order):
             raise
 
     except JSONDecodeError:
-        logger.warning(f"[Instagram entity check]-[JSONDecodeError]-[action: {order['action']}]-[order: {order['id']}]-[url: {media_link}]")
+        logger.warning(f"[Instagram entity check]-[JSONDecode]-[action: {order['action']}]-[order: {order['id']}]-[url: {media_link}]")
 
     except KeyError as e:
         logger.warning(f"[Instagram entity check]-[KeyError]-[action: {order['action']}]-[order: {order['id']}]-[err: {e}]")
@@ -260,26 +260,24 @@ def do_instagram_action(insta_user, order):
         if order['action'] == InstaAction.ACTION_COMMENT:
             args += (random.choice(order['comments']), )
         _s = action_to_call(*args)
-        _s.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-
-        status_code = e.response.status_code
+        status_code = _s.status_code
 
         try:
-            result = e.response.json()
+            result = _s.json()
         except:
             result = {}
 
+        if status_code == requests.codes.ok and result.get('status', '') != 'ok':
+            return
+
         logger.warning(f"[Instagram do action]-[HTTPError]-[insta_user: {insta_user.username}]-[action: {order['action']}]-"
-                       f"[order: {order['entity_id']}]-[status code: {status_code}]-[proxy: {session.proxies}]-[body: {result}]")
+                       f"[order: {order['entity_id']}]-[status code: {status_code}]-[header: {session.headers}]-[proxy: {session.proxies}]-[body: {result}]")
 
         if status_code == 429:
             insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_TEMP)
             insta_user.proxy_id = Proxy.get_proxy()
-            insta_user.save()
 
-        elif status_code == 400:
+        if status_code == 400:
             message = result.get('message', '')
             status = result.get('status', '')
 
@@ -298,9 +296,11 @@ def do_instagram_action(insta_user, order):
             if order['action'] == InstaAction.ACTION_COMMENT and status == 'fail':
                 insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)
 
-            insta_user.save()
+        if status_code == 403:
+            insta_user.clear_session()
 
-        raise
+        insta_user.save()
+        raise Exception('HTTP Error')
 
     # except requests.exceptions.ConnectionError:
     #     proxy = insta_user.proxy
@@ -309,7 +309,7 @@ def do_instagram_action(insta_user, order):
     #     raise
 
     except InstagramMediaClosed as e:
-        logger.warning(f"[Instagram do action]-[Media Closed]-[action: {order['action']}]-[order: {order['link']}]-[err: {e}]")
+        logger.warning(f"[Instagram do action]-[MediaClosed]-[action: {order['action']}]-[order: {order['link']}]-[err: {e}]")
         raise
 
     except Exception as e:
