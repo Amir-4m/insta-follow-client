@@ -178,7 +178,7 @@ def follow_active_users(insta_user_id):
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
 
-# @periodic_task(run_every=crontab(minute='*/20'))
+@periodic_task(run_every=crontab(minute='*/20'))
 def random_task():
     new_insta_user_ids = InstaUser.objects.new().filter(
         # created_time__hour=random.randint(0, 24)

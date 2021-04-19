@@ -64,16 +64,20 @@ class InstaUserAdmin(admin.ModelAdmin):
         self.actions = ('make_active', )
 
         if request.user.is_superuser:
-            self.actions = ('make_active', 'remove_block')
+            self.actions = ('make_active', 'make_new', 'remove_block')
         return super().get_actions(request)
 
     @admin.display
     def blocked(self, obj):
         return ', '.join(obj.blocked_data.keys())
 
-    @admin.action(description=_('Mark selected as Active.'))
+    @admin.action(description=_('Mark selected as ACTIVE.'))
     def make_active(self, request, queryset):
         queryset.update(status=InstaUser.STATUS_ACTIVE)
+
+    @admin.action(description=_('Mark selected as NEW.'))
+    def make_new(self, request, queryset):
+        queryset.update(status=InstaUser.STATUS_NEW)
 
     @admin.action(description=_('Remove block for selected users.'))
     def remove_block(self, request, queryset):

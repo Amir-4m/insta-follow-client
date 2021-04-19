@@ -104,7 +104,7 @@ def activate_insta_users():
         # Q(status=InstaUser.STATUS_ACTIVE) | Q(status=InstaUser.STATUS_NEW),
         status=InstaUser.STATUS_NEW,
         session='',
-    ).values_list('id', flat=True)
+    ).values_list('id', flat=True)[:2]
 
     for insta_user_id in no_session_users:
         _ck = INSTA_USER_LOCK_KEY % insta_user_id
@@ -121,15 +121,15 @@ def activate_insta_users():
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
 
-    InstaUser.objects.filter(
-        status=InstaUser.STATUS_NEW,
-        server_key__isnull=False,
-        created_time__lt=timezone.now() - timezone.timedelta(days=3)
-    ).exclude(
-        session=''
-    ).update(
-        status=InstaUser.STATUS_ACTIVE
-    )
+    # InstaUser.objects.filter(
+    #     status=InstaUser.STATUS_NEW,
+    #     server_key__isnull=False,
+    #     created_time__lt=timezone.now() - timezone.timedelta(days=3)
+    # ).exclude(
+    #     session=''
+    # ).update(
+    #     status=InstaUser.STATUS_ACTIVE
+    # )
 
 
 @periodic_task(run_every=crontab(minute='*/15'))
