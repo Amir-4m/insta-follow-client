@@ -30,7 +30,7 @@ def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
 
-        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-2])
+        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-1])
         action_key = action_selected[0]
         action_str = action_selected[1]
 
@@ -101,7 +101,11 @@ def instagram_login_task(insta_user_id):
 @periodic_task(run_every=crontab(minute='*'))
 def activate_insta_users():
     no_session_users = InstaUser.objects.filter(
-        # Q(status=InstaUser.STATUS_ACTIVE) | Q(status=InstaUser.STATUS_NEW),
+        # Q(
+        #     status=InstaUser.STATUS_ACTIVE,
+        #     updated_time__lt=timezone.now() - timezone.timedelta(hours=3)
+        # ) |
+        # Q(status=InstaUser.STATUS_NEW),
         status=InstaUser.STATUS_NEW,
         session='',
     ).values_list('id', flat=True)[:2]
@@ -123,7 +127,6 @@ def activate_insta_users():
 
     # InstaUser.objects.filter(
     #     status=InstaUser.STATUS_NEW,
-    #     server_key__isnull=False,
     #     created_time__lt=timezone.now() - timezone.timedelta(days=3)
     # ).exclude(
     #     session=''

@@ -60,6 +60,7 @@ def upload_new_user_post(insta_user_id):
     category = random.choice(insta_user_categories)
     content = InstaImage.objects.posts().filter(categories=category).order_by('?')[0]
     try:
+        print(insta_user.username, content.id)
         upload_instagram_post(insta_user, content.image, content.caption)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
@@ -186,13 +187,13 @@ def random_task():
 
     for insta_user_id in new_insta_user_ids:
         action_to_call = globals()[random.choice((
-            'follow_suggested',
-            'follow_new_user',
-            'follow_active_users',
-            'like_new_user_posts',
-            'comment_new_user_posts',
-            'change_profile_picture',
+            # 'follow_suggested',
+            # 'follow_new_user',
+            # 'follow_active_users',
+            # 'like_new_user_posts',
+            # 'comment_new_user_posts',
+            # 'change_profile_picture',
             'upload_new_user_post',
-            'upload_new_user_story',
+            # 'upload_new_user_story',
         ))]
-        action_to_call(insta_user_id)
+        action_to_call.delay(insta_user_id)

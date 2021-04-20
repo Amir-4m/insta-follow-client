@@ -26,6 +26,7 @@ INSTAGRAM_LEGACY_BASE_URL = 'https://i.instagram.com'
 # }
 # USER_AGENT = f'Instagram 10.26.0 Android ({android_version}/{android_release}; 320dpi; 720x1280; {manufacturer}; {model}; armani; qcom; en_US)'
 INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; Samsung; SM-A650G; Snapdragon 450; en_US)"
+INSTAGRAM_USER_AGENT = "Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Mobile Safari/537.36"
 
 ua = UserAgent()
 
@@ -162,7 +163,7 @@ def has_instagram_profile_picture(insta_user, session=None):
     try:
         resp = session.get(profile_link, params=params)
         profile_pic_url = resp.json()['graphql']['user']['profile_pic_url']
-        result = has_picture_key in profile_pic_url.path
+        result = has_picture_key in profile_pic_url
     except Exception as e:
         logger.warning(f"[Instagram check profile pic]-[{type(e)}]-[insta_user: {insta_user.username}]-[err: {e}]")
         return
@@ -278,7 +279,6 @@ def do_instagram_action(insta_user, order):
                        f"[order: {order['entity_id']}]-[status code: {status_code}]-[header: {session.headers}]-[proxy: {session.proxies}]-[body: {result}]")
 
         if status_code == requests.codes.ok and 'ds_user_id' not in _s.cookies.get_dict():
-            insta_user.status = insta_user.STATUS_DISABLED
             insta_user.clear_session()
 
         if status_code == 429:
@@ -333,6 +333,40 @@ def upload_instagram_post(insta_user, image_field, caption=''):
     microtime = int(datetime.now().timestamp())
 
     headers = {
+        "user-agent": '',
+        "content-type": "image/jpeg",
+        "offset": "0",
+        "x-entity-type": "image/jpeg",
+        "x-entity-length": f"{image_field.size}",
+        "x-entity-name": f"fb_uploader_{microtime}",
+        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
+    }
+    session.headers.update(headers)
+    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
+    _s1.raise_for_status()
+
+    session = get_instagram_session(insta_user)
+    headers = {
+        "user-agent": '',
+        "content-type": "application/x-www-form-urlencoded"
+    }
+    body = {
+        'upload_id': microtime,
+        'caption': caption,
+        'source_type': 'library',
+        'custom_accessibility_caption': '',
+        'usertags': '',
+    }
+    session.headers.update(headers)
+    _s2 = session.post(f"{INSTAGRAM_BASE_URL}/create/configure/", data=body)
+    _s2.raise_for_status()
+
+
+def upload_instagram_story(insta_user, image_field):
+    session = get_instagram_session(insta_user)
+    microtime = int(datetime.now().timestamp())
+
+    headers = {
         "content-type": "image/jpeg",
         "offset": "0",
         "x-entity-type": "image/jpeg",
@@ -350,43 +384,10 @@ def upload_instagram_post(insta_user, image_field, caption=''):
     }
     body = {
         'upload_id': microtime,
-        'caption': caption,
         'source_type': 'library',
         'custom_accessibility_caption': '',
         'usertags': '',
     }
     session.headers.update(headers)
-    _s2 = session.post(f"{INSTAGRAM_BASE_URL}/api/v1/media/configure/", data=body)
-    _s2.raise_for_status()
-
-
-def upload_instagram_story(insta_user, image_field):
-    session = get_instagram_session(insta_user)
-    microtime = int(datetime.now().timestamp())
-
-    headers = {
-        "content-type": "image/jpeg",
-        "offset": "0",
-        "x-entity-type": "image/jpeg",
-        "x-entity-length": f"{image_field.size}",
-        "x-entity-name": f"fb_uploader_{microtime}",
-        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
-    }
-    session.headers.update(headers)
-    _s1 = session.post(f'https://www.instagram.com/rupload_igphoto/fb_uploader_{microtime}',
-                       data=open(image_field.path, 'rb'))
-    _s1.raise_for_status()
-
-    session = get_instagram_session(insta_user)
-    headers = {
-        "content-type": "application/x-www-form-urlencoded"
-    }
-    body = {
-        'upload_id': microtime,
-        'source_type': 'library',
-        'custom_accessibility_caption': '',
-        'usertags': '',
-    }
-    session.headers.update(headers)
-    _s2 = session.post('https://www.instagram.com/create/configure_to_story/', data=body)
+    _s2 = session.post(f"{INSTAGRAM_BASE_URL}/create/configure_to_story/", data=body)
     _s2.raise_for_status()
