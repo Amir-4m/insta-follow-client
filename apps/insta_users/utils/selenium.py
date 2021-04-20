@@ -43,7 +43,8 @@ class SeleniumService(object):
             ))
 
             # submitting login form
-            login = self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div/div[3]/button')
+            login = self.driver.find_element_by_xpath(
+                '/html/body/div[1]/section/main/div/div/div[1]/div/form/div/div[3]/button')
             login.submit()
 
             # waiting for save login info dialog to shows up
@@ -51,11 +52,12 @@ class SeleniumService(object):
                 (By.XPATH, '/html/body/div[1]/section/main/div/div/div/section/div/div[2]'),
                 'Save Your Login Info?'
             ))
-            # decline saving login info
-            self.driver.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div/div/button').click()
 
             # convert cookies from json to browser format
             cookies = "; ".join([f"{_c['name']}={_c['value']}" for _c in self.driver.get_cookies()])
+
+            if self.driver.find_element_by_xpath("/html/body/div[1]/section/div[2]/div/p[1]/p[2]/div/div/span"):
+                self.driver.find_element_by_xpath("/html/body/div[1]/section/div[2]/div/p[2]/div/button/span").click()
 
         except Exception as e:
             logger.error(f'getting instagram session id for user {username} failed due to: {e}')
