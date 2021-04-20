@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import InstaImage, InstaVideo
+
+from .models import InstaImage, InstaVideo#, Sentence
 
 
 @admin.register(InstaImage)
@@ -16,3 +17,9 @@ class InstaVideoAdmin(admin.ModelAdmin):
     list_filter = ('categories',)
     search_fields = ('id', 'video')
     filter_horizontal = ('categories',)
+
+
+# @admin.register(Sentence)
+# class SentenceAdmin(admin.ModelAdmin):
+#     pass
+

@@ -13,35 +13,53 @@ class RemoveBlockActionForm(ActionForm):
     )
 
 
-class BlockFilter(admin.SimpleListFilter):
+class GeneralFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return (1, _('Yes')), (2, _('No'))
 
     def queryset(self, request, queryset):
         if self.value() == '1':
-            return queryset.filter(blocked_data__has_key=self.action)
+            return queryset.filter(**self.filter_params)
         if self.value() == '2':
-            return queryset.exclude(blocked_data__has_key=self.action)
+            return queryset.exclude(**self.filter_params)
         return queryset
 
 
-class FollowBlockFilter(BlockFilter):
+class HasSessionFilter(GeneralFilter):
+    title = _('has session')
+    parameter_name = 'ss'
+    
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.exclude(session='')
+        if self.value() == '2':
+            return queryset.filter(session='')
+        return queryset
+
+
+class HasServerKeyFilter(GeneralFilter):
+    title = _('has server key')
+    parameter_name = 'sk'
+    filter_params = dict(server_key__isnull=False)
+
+
+class FollowBlockFilter(GeneralFilter):
     title = _('follow block')
     parameter_name = 'f_b'
-    action = InstaAction.ACTION_FOLLOW
+    filter_params = dict(blocked_data__has_key=InstaAction.ACTION_FOLLOW)
 
 
-class LikeBlockFilter(BlockFilter):
+class LikeBlockFilter(GeneralFilter):
     title = _('like block')
     parameter_name = 'l_b'
-    action = InstaAction.ACTION_LIKE
+    filter_params = dict(blocked_data__has_key=InstaAction.ACTION_LIKE)
 
 
-class CommentBlockFilter(BlockFilter):
+class CommentBlockFilter(GeneralFilter):
     title = _('comment block')
     parameter_name = 'c_b'
-    action = InstaAction.ACTION_COMMENT
+    filter_params = dict(blocked_data__has_key=InstaAction.ACTION_COMMENT)
 
 
 @admin.register(InstaContentCategory)
@@ -52,8 +70,10 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(InstaUser)
 class InstaUserAdmin(admin.ModelAdmin):
     action_form = RemoveBlockActionForm
-    list_display = ("username", "created_time", "updated_time", "user_id", "status", "blocked", "proxy", "server_key")
-    list_filter = ("status", FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
+    list_display = (
+        "username", "created_time", "updated_time", "user_id", "status", "blocked", "has_proxy", "has_server_key")
+    list_filter = (
+        "status", HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
     date_hierarchy = "created_time"
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
@@ -70,6 +90,14 @@ class InstaUserAdmin(admin.ModelAdmin):
     @admin.display
     def blocked(self, obj):
         return ', '.join(obj.blocked_data.keys())
+
+    @admin.display(boolean=True)
+    def has_proxy(self, obj):
+        return bool(obj.proxy_id)
+
+    @admin.display(boolean=True)
+    def has_server_key(self, obj):
+        return bool(obj.server_key)
 
     @admin.action(description=_('Mark selected as ACTIVE.'))
     def make_active(self, request, queryset):
