@@ -15,6 +15,7 @@ from apps.insta_users.utils.instagram import (
     get_instagram_suggested_follows, get_instagram_profile_posts,
     has_instagram_profile_picture, change_instagram_profile_pic,
     upload_instagram_post, upload_instagram_story,
+    INSTAGRAM_USER_AGENT
 )
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ def change_profile_picture(insta_user_id):
     category = random.choice(insta_user_categories)
     content = InstaImage.objects.profiles().filter(categories=category).order_by('?')[0]
     try:
+        logger.debug(f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[content: {content.id}]")
         session = get_instagram_session(insta_user)
         if has_instagram_profile_picture(insta_user, session) is False:
             change_instagram_profile_pic(insta_user, content.image, session)
@@ -60,8 +62,9 @@ def upload_new_user_post(insta_user_id):
     category = random.choice(insta_user_categories)
     content = InstaImage.objects.posts().filter(categories=category).order_by('?')[0]
     try:
-        print(insta_user.username, content.id)
-        upload_instagram_post(insta_user, content.image, content.caption)
+        logger.debug(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[content: {content.id}]")
+        session = get_instagram_session(insta_user, set_proxy=False, user_agent=INSTAGRAM_USER_AGENT)
+        upload_instagram_post(session, content.image, content.caption)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
 
@@ -76,7 +79,9 @@ def upload_new_user_story(insta_user_id):
     category = random.choice(insta_user_categories)
     content = InstaImage.objects.stories().filter(categories=category).order_by('?')[0]
     try:
-        upload_instagram_story(insta_user, content.image)
+        logger.debug(f"[Simulator upload_new_user_story]-[insta_user: {insta_user.username}]-[content: {content.id}]")
+        session = get_instagram_session(insta_user, set_proxy=False, user_agent=INSTAGRAM_USER_AGENT)
+        upload_instagram_story(session, content.image)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_story]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
 
@@ -187,13 +192,13 @@ def random_task():
 
     for insta_user_id in new_insta_user_ids:
         action_to_call = globals()[random.choice((
-            # 'follow_suggested',
-            # 'follow_new_user',
-            # 'follow_active_users',
-            # 'like_new_user_posts',
-            # 'comment_new_user_posts',
-            # 'change_profile_picture',
+            'follow_suggested',
+            'follow_new_user',
+            'follow_active_users',
+            'like_new_user_posts',
+            'comment_new_user_posts',
+            'change_profile_picture',
             'upload_new_user_post',
-            # 'upload_new_user_story',
+            'upload_new_user_story',
         ))]
         action_to_call.delay(insta_user_id)

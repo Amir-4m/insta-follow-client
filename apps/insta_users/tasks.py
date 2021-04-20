@@ -25,7 +25,7 @@ INSTA_USER_LOCK_KEY = "insta_lock_%s"
 ua = UserAgent()
 
 
-@periodic_task(run_every=crontab(minute='*/6'))
+@periodic_task(run_every=crontab(minute='*/3'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
@@ -101,12 +101,11 @@ def instagram_login_task(insta_user_id):
 @periodic_task(run_every=crontab(minute='*'))
 def activate_insta_users():
     no_session_users = InstaUser.objects.filter(
-        # Q(
-        #     status=InstaUser.STATUS_ACTIVE,
-        #     updated_time__lt=timezone.now() - timezone.timedelta(hours=3)
-        # ) |
-        # Q(status=InstaUser.STATUS_NEW),
-        status=InstaUser.STATUS_NEW,
+        Q(
+            status=InstaUser.STATUS_ACTIVE,
+            updated_time__lt=timezone.now() - timezone.timedelta(hours=3)
+        ) |
+        Q(status=InstaUser.STATUS_NEW),
         session='',
     ).values_list('id', flat=True)[:2]
 
@@ -125,14 +124,14 @@ def activate_insta_users():
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
 
-    # InstaUser.objects.filter(
-    #     status=InstaUser.STATUS_NEW,
-    #     created_time__lt=timezone.now() - timezone.timedelta(days=3)
-    # ).exclude(
-    #     session=''
-    # ).update(
-    #     status=InstaUser.STATUS_ACTIVE
-    # )
+    InstaUser.objects.filter(
+        status=InstaUser.STATUS_NEW,
+        created_time__lt=timezone.now() - timezone.timedelta(days=3)
+    ).exclude(
+        session=''
+    ).update(
+        status=InstaUser.STATUS_ACTIVE
+    )
 
 
 @periodic_task(run_every=crontab(minute='*/15'))

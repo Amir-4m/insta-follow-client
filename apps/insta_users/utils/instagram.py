@@ -7,6 +7,8 @@ from datetime import datetime
 
 from fake_useragent import UserAgent
 
+from django.conf import settings
+
 from apps.insta_users.models import InstaAction
 from apps.proxies.models import Proxy
 
@@ -101,10 +103,11 @@ def instagram_login(insta_user, commit=True):
         insta_user.save()
 
 
-def get_instagram_session(insta_user):
+def get_instagram_session(insta_user, set_proxy=True, user_agent=''):
     session = requests.session()
     user_session = insta_user.get_session
-    user_agent = insta_user.user_agent
+    if not user_agent:
+        user_agent = insta_user.user_agent
     if user_agent:
         session.headers.update({
             'user-agent': user_agent,
@@ -114,7 +117,8 @@ def get_instagram_session(insta_user):
         'X-Instagram-AJAX': '7e64493c83ae',
     })
     session.cookies.update(user_session)
-    insta_user.set_session_proxy(session)
+    if set_proxy:
+        insta_user.set_session_proxy(session)
 
     return session
 
@@ -291,8 +295,6 @@ def do_instagram_action(insta_user, order):
 
             if message == 'feedback_required' and result.get('spam', False):
                 insta_user.set_blocked(order['action'], InstaAction.BLOCK_TYPE_SPAM)
-                # if order['action'] == InstaAction.ACTION_FOLLOW:
-                #     insta_user.clear_session()
 
             if message == 'checkpoint_required' and not result.get('lock', True):
                 insta_user.status = insta_user.STATUS_DISABLED
@@ -328,12 +330,11 @@ def do_instagram_action(insta_user, order):
         raise
 
 
-def upload_instagram_post(insta_user, image_field, caption=''):
-    session = get_instagram_session(insta_user)
+def upload_instagram_post(session, image_field, caption=''):
     microtime = int(datetime.now().timestamp())
 
     headers = {
-        "user-agent": '',
+        "user-agent": INSTAGRAM_USER_AGENT,
         "content-type": "image/jpeg",
         "offset": "0",
         "x-entity-type": "image/jpeg",
@@ -345,9 +346,8 @@ def upload_instagram_post(insta_user, image_field, caption=''):
     _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
     _s1.raise_for_status()
 
-    session = get_instagram_session(insta_user)
     headers = {
-        "user-agent": '',
+        "user-agent": INSTAGRAM_USER_AGENT,
         "content-type": "application/x-www-form-urlencoded"
     }
     body = {
@@ -362,11 +362,11 @@ def upload_instagram_post(insta_user, image_field, caption=''):
     _s2.raise_for_status()
 
 
-def upload_instagram_story(insta_user, image_field):
-    session = get_instagram_session(insta_user)
+def upload_instagram_story(session, image_field):
     microtime = int(datetime.now().timestamp())
 
     headers = {
+        "user-agent": INSTAGRAM_USER_AGENT,
         "content-type": "image/jpeg",
         "offset": "0",
         "x-entity-type": "image/jpeg",
@@ -378,8 +378,8 @@ def upload_instagram_story(insta_user, image_field):
     _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
     _s1.raise_for_status()
 
-    session = get_instagram_session(insta_user)
     headers = {
+        "user-agent": INSTAGRAM_USER_AGENT,
         "content-type": "application/x-www-form-urlencoded"
     }
     body = {
