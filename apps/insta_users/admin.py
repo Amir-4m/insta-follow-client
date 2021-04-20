@@ -41,7 +41,13 @@ class HasSessionFilter(GeneralFilter):
 class HasServerKeyFilter(GeneralFilter):
     title = _('has server key')
     parameter_name = 'sk'
-    filter_params = dict(server_key__isnull=False)
+
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.filter(server_key__isnull=False)
+        if self.value() == '2':
+            return queryset.filter(server_key__isnull=True)
+        return queryset
 
 
 class FollowBlockFilter(GeneralFilter):
@@ -70,10 +76,8 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(InstaUser)
 class InstaUserAdmin(admin.ModelAdmin):
     action_form = RemoveBlockActionForm
-    list_display = (
-        "username", "created_time", "updated_time", "user_id", "status", "blocked", "has_proxy", "has_server_key")
-    list_filter = (
-        "status", HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
+    list_display = ("username", "created_time", "updated_time", "user_id", "status", "blocked", "has_session", "has_server_key")
+    list_filter = ("status", HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
     date_hierarchy = "created_time"
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
@@ -92,12 +96,12 @@ class InstaUserAdmin(admin.ModelAdmin):
         return ', '.join(obj.blocked_data.keys())
 
     @admin.display(boolean=True)
-    def has_proxy(self, obj):
-        return bool(obj.proxy_id)
+    def has_session(self, obj):
+        return obj.session != ''
 
     @admin.display(boolean=True)
     def has_server_key(self, obj):
-        return bool(obj.server_key)
+        return obj.server_key is not None
 
     @admin.action(description=_('Mark selected as ACTIVE.'))
     def make_active(self, request, queryset):

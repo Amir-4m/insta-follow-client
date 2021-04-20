@@ -60,6 +60,13 @@ class LiveManager(models.Manager):
             session='',
         )
 
+    def manageable(self):
+        return super().get_queryset().filter(
+            manage_content=True,
+        ).exclude(
+            session='',
+        )
+
 
 class InstaUser(models.Model):
     STATUS_ACTIVE = 10
@@ -93,6 +100,7 @@ class InstaUser(models.Model):
     server_key = models.UUIDField(_('server Key'), blank=True, null=True, help_text=_('insta follow server key'))
 
     status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_NEW, db_index=True)
+    manage_content = models.BooleanField(_("manage"), default=False, help_text=_("manage profile content"))
     description = models.TextField(_("description"), blank=True)
 
     blocked_data = models.JSONField(_('blocked data'), default=dict, editable=False)
