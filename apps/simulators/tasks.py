@@ -44,9 +44,9 @@ def change_profile_picture(insta_user_id):
     category = random.choice(insta_user_categories)
     content = InstaImage.objects.profiles().filter(categories=category).order_by('?')[0]
     try:
-        logger.debug(f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[content: {content.id}]")
         session = get_instagram_session(insta_user)
         if has_instagram_profile_picture(insta_user, session) is False:
+            logger.debug(f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[content: {content.id}]")
             change_instagram_profile_pic(insta_user, content.image, session)
     except Exception as e:
         logger.warning(f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")

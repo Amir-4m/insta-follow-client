@@ -25,12 +25,12 @@ INSTA_USER_LOCK_KEY = "insta_lock_%s"
 ua = UserAgent()
 
 
-@periodic_task(run_every=crontab(minute='*/3'))
+@periodic_task(run_every=crontab(minute='*/5'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:
 
-        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-1])
+        action_selected = random.choice(InstaAction.ACTION_CHOICES[:-2])
         action_key = action_selected[0]
         action_str = action_selected[1]
 
@@ -103,7 +103,7 @@ def activate_insta_users():
     no_session_users = InstaUser.objects.filter(
         Q(
             status=InstaUser.STATUS_ACTIVE,
-            updated_time__lt=timezone.now() - timezone.timedelta(hours=3)
+            updated_time__lt=timezone.now() - timezone.timedelta(days=30)
         ) |
         Q(status=InstaUser.STATUS_NEW),
         session='',
@@ -126,7 +126,7 @@ def activate_insta_users():
 
     InstaUser.objects.filter(
         status=InstaUser.STATUS_NEW,
-        created_time__lt=timezone.now() - timezone.timedelta(days=3)
+        updated_time__lt=timezone.now() - timezone.timedelta(days=1)
     ).exclude(
         session=''
     ).update(

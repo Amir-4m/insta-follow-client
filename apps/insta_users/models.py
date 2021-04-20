@@ -142,7 +142,6 @@ class InstaUser(models.Model):
     def set_blocked(self, action, block_type):
         block_count = self.blocked_data.get(action, {}).get('count', 0)
         if block_count == settings.INSTA_FOLLOW_SETTINGS['max_lock']:
-            self.status = self.STATUS_NEW
             self.clear_session()
         block_count = min(block_count + 1, settings.INSTA_FOLLOW_SETTINGS['max_lock'])
         self.blocked_data[action] = dict(
