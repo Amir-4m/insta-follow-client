@@ -56,3 +56,8 @@ class InstaVideo(InstaContent):
         db_table = 'insta_videos'
         verbose_name = _('Insta Video')
         verbose_name_plural = _('Insta Videos')
+
+
+# class Sentence(models.Model):
+#     sentence = models.TextField(_('sentence'))
+
