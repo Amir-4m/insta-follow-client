@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import InstaImage, InstaVideo#, Sentence
+from .models import InstaImage, InstaVideo, Sentence
 
 
 @admin.register(InstaImage)
@@ -19,7 +19,7 @@ class InstaVideoAdmin(admin.ModelAdmin):
     filter_horizontal = ('categories',)
 
 
-# @admin.register(Sentence)
-# class SentenceAdmin(admin.ModelAdmin):
-#     pass
+@admin.register(Sentence)
+class SentenceAdmin(admin.ModelAdmin):
+    pass
 
