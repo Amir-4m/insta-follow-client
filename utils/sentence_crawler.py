@@ -12,8 +12,11 @@ class SentenceCrawler:
         self.soup = BeautifulSoup(page.text, "html.parser")
 
     def collect_sentences(self):
+        to_be_inserted = []
         main_div_all_p = self.soup.find(class_='main-side single clearfix').find_all('p')
         for p in main_div_all_p:
-            text = p.get_text()
-            if '✰★' not in text or text != '':
-                Sentence.objects.get_or_create(sentence=text)
+            text = p.get_text().strip()
+            if '✰★' in text or text == '':
+                continue
+            to_be_inserted.append(Sentence(sentence=text))
+        Sentence.objects.bulk_create(to_be_inserted)

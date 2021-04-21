@@ -59,7 +59,10 @@ class InstaVideo(InstaContent):
 
 
 class Sentence(models.Model):
+    created_time = models.DateTimeField(_('created time'), auto_now_add=True)
+    updated_time = models.DateTimeField(_('updated time'), auto_now=True)
+
     sentence = models.TextField(_('sentence'))
 
     def __str__(self):
-        return f"{self.sentence[:10]}..."
+        return f"{self.sentence[:20]}..."

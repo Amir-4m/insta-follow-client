@@ -8,7 +8,7 @@ from celery import shared_task
 from celery.schedules import crontab
 from celery.task import periodic_task
 
-from .models import InstaImage
+from .models import InstaImage, Sentence
 from apps.insta_users.models import InstaUser, InstaAction
 from apps.insta_users.utils.instagram import (
     get_instagram_session, do_instagram_action,
@@ -23,15 +23,15 @@ logger = logging.getLogger(__name__)
 MAX_ACTION_EACH_TURN = 3
 
 
-def make_random_sentence():
-    nouns = ["puppy", "car", "rabbit", "girl", "monkey"]
-    verbs = ["runs", "hits", "jumps", "drives", "barfs"]
-    adv = ["crazily.", "dutifully.", "foolishly.", "merrily.", "occasionally."]
-    adj = ["adorable", "clueless", "dirty", "odd", "stupid"]
-
-    _l = (nouns, verbs, adj, adv)
-
-    return ' '.join([random.choice(i) for i in _l])
+# def make_random_sentence():
+#     nouns = ["puppy", "car", "rabbit", "girl", "monkey"]
+#     verbs = ["runs", "hits", "jumps", "drives", "barfs"]
+#     adv = ["crazily.", "dutifully.", "foolishly.", "merrily.", "occasionally."]
+#     adj = ["adorable", "clueless", "dirty", "odd", "stupid"]
+#
+#     _l = (nouns, verbs, adj, adv)
+#
+#     return ' '.join([random.choice(i) for i in _l])
 
 
 @shared_task()
@@ -89,7 +89,7 @@ def upload_new_user_story(insta_user_id):
 @shared_task()
 def comment_new_user_posts(insta_user_id):
     action = InstaAction.get_action_from_key(InstaAction.ACTION_COMMENT)
-    comment = make_random_sentence()
+    comment = Sentence.objects.order_by('?')[0]
     order = dict(action=InstaAction.ACTION_COMMENT, id=0, comments=[comment])
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
     insta_user_posts = get_instagram_profile_posts(insta_user)

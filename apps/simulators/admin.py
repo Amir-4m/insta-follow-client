@@ -21,5 +21,7 @@ class InstaVideoAdmin(admin.ModelAdmin):
 
 @admin.register(Sentence)
 class SentenceAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('created_time', 'sentence', )
+    search_fields = ('sentence',)
+
 
