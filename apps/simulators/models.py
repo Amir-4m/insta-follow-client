@@ -58,6 +58,8 @@ class InstaVideo(InstaContent):
         verbose_name_plural = _('Insta Videos')
 
 
-# class Sentence(models.Model):
-#     sentence = models.TextField(_('sentence'))
+class Sentence(models.Model):
+    sentence = models.TextField(_('sentence'))
 
+    def __str__(self):
+        return f"{self.sentence[:10]}..."
