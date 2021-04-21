@@ -220,13 +220,13 @@ INSTA_FOLLOW_SETTINGS = {
     "delay_like": 3,
     "delay_comment": 7,
 
-    "pre_lock_follow": 20,
+    "pre_lock_follow": 15,
     "pre_lock_like": 10,
-    "pre_lock_comment": 15,
+    "pre_lock_comment": 10,
 
-    "lock_follow": 120,
-    "lock_like": 60,
-    "lock_comment": 90,
+    "lock_follow": 60,
+    "lock_like": 30,
+    "lock_comment": 30,
 
     "max_lock": 5,
 }

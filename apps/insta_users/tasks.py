@@ -25,7 +25,7 @@ INSTA_USER_LOCK_KEY = "insta_lock_%s"
 ua = UserAgent()
 
 
-@periodic_task(run_every=crontab(minute='*/5'))
+@periodic_task(run_every=crontab(minute='*/4'))
 def insta_user_action():
     insta_users = InstaUser.objects.live()
     for insta_user in insta_users:

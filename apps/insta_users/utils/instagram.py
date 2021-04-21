@@ -283,6 +283,8 @@ def do_instagram_action(insta_user, order):
                        f"[order: {order['entity_id']}]-[status code: {status_code}]-[header: {session.headers}]-[proxy: {session.proxies}]-[body: {result}]")
 
         if status_code == requests.codes.ok and 'ds_user_id' not in _s.cookies.get_dict():
+            insta_user.status = insta_user.STATUS_NEW
+            insta_user.manage_content = True
             insta_user.clear_session()
 
         if status_code == 429:

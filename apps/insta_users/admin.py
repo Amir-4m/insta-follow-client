@@ -27,7 +27,7 @@ class GeneralFilter(admin.SimpleListFilter):
 
 
 class HasSessionFilter(GeneralFilter):
-    title = _('has session')
+    title = _('has Session')
     parameter_name = 'ss'
     
     def queryset(self, request, queryset):
@@ -39,7 +39,7 @@ class HasSessionFilter(GeneralFilter):
 
 
 class HasServerKeyFilter(GeneralFilter):
-    title = _('has server key')
+    title = _('has Server Key')
     parameter_name = 'sk'
 
     def queryset(self, request, queryset):
@@ -51,19 +51,19 @@ class HasServerKeyFilter(GeneralFilter):
 
 
 class FollowBlockFilter(GeneralFilter):
-    title = _('follow block')
+    title = _('block Follow')
     parameter_name = 'f_b'
     filter_params = dict(blocked_data__has_key=InstaAction.ACTION_FOLLOW)
 
 
 class LikeBlockFilter(GeneralFilter):
-    title = _('like block')
+    title = _('block Like')
     parameter_name = 'l_b'
     filter_params = dict(blocked_data__has_key=InstaAction.ACTION_LIKE)
 
 
 class CommentBlockFilter(GeneralFilter):
-    title = _('comment block')
+    title = _('block Comment')
     parameter_name = 'c_b'
     filter_params = dict(blocked_data__has_key=InstaAction.ACTION_COMMENT)
 
@@ -76,8 +76,8 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(InstaUser)
 class InstaUserAdmin(admin.ModelAdmin):
     action_form = RemoveBlockActionForm
-    list_display = ("username", "created_time", "updated_time", "user_id", "status", "blocked", "has_session", "has_server_key")
-    list_filter = ("status", HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
+    list_display = ("username", "created_time", "updated_time", "user_id", "manage_content", "status", "blocked", "has_session", "has_server_key")
+    list_filter = ("status", "manage_content", HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
     date_hierarchy = "created_time"
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
@@ -88,7 +88,7 @@ class InstaUserAdmin(admin.ModelAdmin):
         self.actions = ('make_active', )
 
         if request.user.is_superuser:
-            self.actions = ('make_active', 'make_new', 'remove_block')
+            self.actions = ('make_active', 'make_new', 'clear_session', 'remove_block')
         return super().get_actions(request)
 
     @admin.display
@@ -102,6 +102,10 @@ class InstaUserAdmin(admin.ModelAdmin):
     @admin.display(boolean=True)
     def has_server_key(self, obj):
         return obj.server_key is not None
+
+    @admin.action(description=_('Clear Session for selected users.'))
+    def clear_session(self, request, queryset):
+        queryset.update(session='', user_agent='', proxy=None, blocked_data={})
 
     @admin.action(description=_('Mark selected as ACTIVE.'))
     def make_active(self, request, queryset):
