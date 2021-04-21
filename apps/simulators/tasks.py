@@ -100,7 +100,7 @@ def comment_new_user_posts(insta_user_id):
         random_posts = insta_user_posts
         for data in random_posts:
             order['entity_id'] = data['node']['id']
-            logger.debug(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[order: {order['entity_id']}]-[comment: {comment}]")
+            logger.debug(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[order: {order['entity_id']}]-[comment: {comment}]")
             try:
                 do_instagram_action(active_user, order)
             except Exception as e:
