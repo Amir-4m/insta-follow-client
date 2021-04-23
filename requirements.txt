@@ -10,3 +10,4 @@ pillow
 fake-useragent==0.1.11
 selenium==3.141.0
 beautifulsoup4
+sorl-thumbnail==11.12
