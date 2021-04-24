@@ -80,7 +80,7 @@ def insta_follow_login_task(insta_user_id):
     insta_user.save()
 
 
-@shared_task
+@shared_task(queue='instagram_login_selenium')
 def instagram_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
     # instagram_login(insta_user)
@@ -101,11 +101,7 @@ def instagram_login_task(insta_user_id):
 @periodic_task(run_every=crontab(minute='*'))
 def activate_insta_users():
     no_session_users = InstaUser.objects.filter(
-        Q(
-            status=InstaUser.STATUS_ACTIVE,
-            updated_time__lt=timezone.now() - timezone.timedelta(days=30)
-        ) |
-        Q(status=InstaUser.STATUS_NEW),
+        status=InstaUser.STATUS_NEW,
         session='',
     ).values_list('id', flat=True)[:2]
 
@@ -124,13 +120,25 @@ def activate_insta_users():
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
 
+    # make Active Insta User which been blocked to NEW for simulator
+    InstaUser.objects.filter(
+        status=InstaUser.STATUS_ACTIVE,
+        updated_time__lt=timezone.now() - timezone.timedelta(days=1),
+        session='',
+    ).update(
+        status=InstaUser.STATUS_NEW,
+        updated_time=timezone.now()
+    )
+
+    # Re-Active Insta User after simulator works
     InstaUser.objects.filter(
         status=InstaUser.STATUS_NEW,
-        updated_time__lt=timezone.now() - timezone.timedelta(days=1)
+        updated_time__lt=timezone.now() - timezone.timedelta(days=2)
     ).exclude(
         session=''
     ).update(
-        status=InstaUser.STATUS_ACTIVE
+        status=InstaUser.STATUS_ACTIVE,
+        updated_time=timezone.now()
     )
 
 
