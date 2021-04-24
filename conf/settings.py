@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'apps.simulators',
 
     # Third Parties
+    'sorl.thumbnail',
 
     # Default
     'django.contrib.admin',

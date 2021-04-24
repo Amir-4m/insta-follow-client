@@ -8,9 +8,11 @@ from datetime import datetime
 from fake_useragent import UserAgent
 
 from django.conf import settings
+from sorl.thumbnail import get_thumbnail
 
 from apps.insta_users.models import InstaAction
 from apps.proxies.models import Proxy
+from conf.settings import MEDIA_ROOT
 
 logger = logging.getLogger(__name__)
 
@@ -334,6 +336,8 @@ def do_instagram_action(insta_user, order):
 
 def upload_instagram_post(session, image_field, caption=''):
     microtime = int(datetime.now().timestamp())
+    w = image_field.width
+    im = get_thumbnail(image_field, f'{w}x{w}', crop='center', quality=99)
 
     headers = {
         "user-agent": INSTAGRAM_USER_AGENT,
@@ -342,10 +346,10 @@ def upload_instagram_post(session, image_field, caption=''):
         "x-entity-type": "image/jpeg",
         "x-entity-length": f"{image_field.size}",
         "x-entity-name": f"fb_uploader_{microtime}",
-        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
+        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{w},"upload_media_width":{w}}}',
     }
     session.headers.update(headers)
-    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
+    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(f'{MEDIA_ROOT}/{im}', 'rb'))
     _s1.raise_for_status()
 
     headers = {
@@ -362,6 +366,7 @@ def upload_instagram_post(session, image_field, caption=''):
     session.headers.update(headers)
     _s2 = session.post(f"{INSTAGRAM_BASE_URL}/create/configure/", data=body)
     _s2.raise_for_status()
+    print(_s2.text)
 
 
 def upload_instagram_story(session, image_field):
