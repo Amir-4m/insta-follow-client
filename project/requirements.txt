@@ -1,0 +1,13 @@
+django~=3.2
+python-decouple
+psycopg2-binary
+pymemcache
+requests
+celery~=4.4.2
+pycrypto==2.6.1
+pid~=3.0
+pillow
+fake-useragent==0.1.11
+selenium==3.141.0
+beautifulsoup4
+sorl-thumbnail==12.7.0
