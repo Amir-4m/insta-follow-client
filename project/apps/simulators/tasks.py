@@ -4,9 +4,6 @@ import random
 
 from django.conf import settings
 
-from sorl.thumbnail.base import ThumbnailBackend
-from sorl.thumbnail import get_thumbnail
-
 from celery import shared_task
 from celery.schedules import crontab
 from celery.task import periodic_task
@@ -20,6 +17,8 @@ from apps.insta_users.utils.instagram import (
     upload_instagram_post, upload_instagram_story,
     INSTAGRAM_USER_AGENT
 )
+
+from utils.images import resize_image
 
 logger = logging.getLogger(__name__)
 
@@ -65,11 +64,14 @@ def upload_new_user_post(insta_user_id):
     category = random.choice(insta_user_categories)
     content = InstaImage.objects.posts().filter(categories=category).order_by('?')[0]
     image = content.image
-    if image.width > image.height:
-        image = get_thumbnail(content.image, f'x{image.height}', crop='center')
 
-    if image.height > image.width:
-        image = get_thumbnail(content.image, f'{image.width}', crop='center top')
+    if image.width != image.height:
+        image = resize_image()
+    # if image.width > image.height:
+    #     image = get_thumbnail(content.image, f'x{image.height}', crop='center')
+    #
+    # if image.height > image.width:
+    #     image = get_thumbnail(content.image, f'{image.width}', crop='center top')
 
     try:
         logger.debug(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[content: {content.id}]")
@@ -99,22 +101,23 @@ def upload_new_user_story(insta_user_id):
 @shared_task()
 def comment_new_user_posts(insta_user_id):
     action = InstaAction.get_action_from_key(InstaAction.ACTION_COMMENT)
-    comment = Sentence.objects.order_by('?')[0]
-    order = dict(action=InstaAction.ACTION_COMMENT, id=0, comments=[comment])
+    order = dict(action=InstaAction.ACTION_COMMENT, id=0)
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
     insta_user_posts = get_instagram_profile_posts(insta_user)
 
-    active_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_COMMENT).order_by('?')[:MAX_ACTION_EACH_TURN]
-    for active_user in active_users:
+    action_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_COMMENT).order_by('?')[:MAX_ACTION_EACH_TURN]
+    for action_user in action_users:
         # random_posts = [i["id"] for i in random.choices(insta_user_posts, k=min(1, len(insta_user_posts)//3))]
         random_posts = insta_user_posts
         for data in random_posts:
+            comment = Sentence.objects.order_by('?')[0]
+            order['comments'] = [comment]
             order['entity_id'] = data['node']['id']
-            logger.debug(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[order: {order['entity_id']}]-[comment: {comment}]")
+            logger.debug(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[order: {order['entity_id']}]-[comment: {comment}]")
             try:
-                do_instagram_action(active_user, order)
+                do_instagram_action(action_user, order)
             except Exception as e:
-                logger.warning(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[comment: {comment}]-[{type(e)}]-[err: {e}]")
+                logger.warning(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[comment: {comment}]-[{type(e)}]-[err: {e}]")
                 break
             time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
@@ -126,17 +129,17 @@ def like_new_user_posts(insta_user_id):
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
     insta_user_posts = get_instagram_profile_posts(insta_user)
 
-    active_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_LIKE).order_by('?')[:MAX_ACTION_EACH_TURN]
-    for active_user in active_users:
+    action_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_LIKE).order_by('?')[:MAX_ACTION_EACH_TURN]
+    for action_user in action_users:
         # random_posts = [i["id"] for i in random.choices(insta_user_posts, k=min(1, len(insta_user_posts)//3))]
         random_posts = insta_user_posts
         for data in random_posts:
             order['entity_id'] = data['node']['id']
-            logger.debug(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[order: {order['entity_id']}]")
+            logger.debug(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[order: {order['entity_id']}]")
             try:
-                do_instagram_action(active_user, order)
+                do_instagram_action(action_user, order)
             except Exception as e:
-                logger.warning(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[{type(e)}]-[err: {e}]")
+                logger.warning(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]")
                 break
             time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
@@ -165,12 +168,12 @@ def follow_new_user(insta_user_id):
     action = InstaAction.get_action_from_key(InstaAction.ACTION_FOLLOW)
     order = dict(action=InstaAction.ACTION_FOLLOW, entity_id=insta_user_id, id=0)
 
-    active_users = InstaUser.objects.live().exclude(blocked_data__has_key=InstaAction.ACTION_FOLLOW).order_by('?')[:MAX_ACTION_EACH_TURN]
-    for active_user in active_users:
+    action_users = InstaUser.objects.live().exclude(blocked_data__has_key=InstaAction.ACTION_FOLLOW).order_by('?')[:MAX_ACTION_EACH_TURN]
+    for action_user in action_users:
         try:
-            do_instagram_action(active_user, order)
+            do_instagram_action(action_user, order)
         except Exception as e:
-            logger.warning(f'[Simulator follow_new_user]-[insta_user: {insta_user_id}]-[active_user: {active_user.username}]-[{type(e)}]-[err: {e}]')
+            logger.warning(f'[Simulator follow_new_user]-[insta_user: {insta_user_id}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]')
             continue
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
@@ -183,31 +186,31 @@ def follow_active_users(insta_user_id):
     if insta_user.is_blocked(InstaAction.ACTION_FOLLOW):
         return
 
-    active_users = InstaUser.objects.live().order_by('?')[:MAX_ACTION_EACH_TURN]
-    for active_user in active_users:
-        order['entity_id'] = active_user.user_id
+    action_users = InstaUser.objects.live().order_by('?')[:MAX_ACTION_EACH_TURN]
+    for action_user in action_users:
+        order['entity_id'] = action_user.user_id
         try:
             do_instagram_action(insta_user, order)
         except Exception as e:
-            logger.warning(f'[Simulator follow_active_users]-[insta_user: {insta_user.username}]-[active_user: {active_user.username}]-[{type(e)}]-[err: {e}]')
+            logger.warning(f'[Simulator follow_active_users]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]')
             break
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
 
 @periodic_task(run_every=crontab(minute='*/20'))
 def random_task():
-    new_insta_user_ids = InstaUser.objects.new().values_list('user_id', flat=True).order_by('?')[:2]
+    new_insta_user_ids = InstaUser.objects.new().values_list('user_id', flat=True).order_by('?')[:10]
     for insta_user_id in new_insta_user_ids:
         action_to_call = globals()[random.choice((
             'follow_suggested',
             'follow_new_user',
-            'follow_active_users',
+            # 'follow_active_users',
             'like_new_user_posts',
             'comment_new_user_posts',
         ))]
         action_to_call.delay(insta_user_id)
 
-    manageable_insta_user_ids = InstaUser.objects.manageable().values_list('user_id', flat=True).order_by('?')[:4]
+    manageable_insta_user_ids = InstaUser.objects.manageable().values_list('user_id', flat=True).order_by('?')[:5]
     for insta_user_id in manageable_insta_user_ids:
         action_to_call = globals()[random.choice((
             'change_profile_picture',
