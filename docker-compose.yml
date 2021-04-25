@@ -2,22 +2,21 @@ version: '3.4'
 
 services:
   django-app:
-#    container_name: ${CI_PROJECT_NAME}
     build: .
     entrypoint: ["/entrypoint.sh"]
     env_file: ${PROJECT_ENV}
-    command: uwsgi --ini /build/uwsgi.ini
+    command: uwsgi --ini uwsgi.ini
     volumes:
       - ./project:/app
       - ${PROJECT_PATH}/media:/media
       - ${PROJECT_PATH}/static:/static
       - ${PROJECT_PATH}/logs:/logs
-    ports:
-      - ${EXPOSE_PORT}:8000
+    expose:
+      - 8000
 
   celery-worker:
     build: .
-    env_file: .env
+    env_file: ${PROJECT_ENV}
     command: celery -A conf worker -l info
     volumes:
       - ./project:/app
@@ -27,10 +26,20 @@ services:
 
   celery-beat:
     build: .
-    env_file: .env
+    env_file: ${PROJECT_ENV}
     command: celery -A conf beat -l info
     volumes:
       - ./project:/app
       - ${PROJECT_PATH}/media:/media
       - ${PROJECT_PATH}/static:/static
       - ${PROJECT_PATH}/logs:/logs
+
+  nginx:
+    build: ./nginx
+    volumes:
+      - ${PROJECT_PATH}/media:/var/www/media
+      - ${PROJECT_PATH}/static:/var/www/static
+    ports:
+      - ${EXPOSE_PORT}:80
+    depends_on:
+      - django-app

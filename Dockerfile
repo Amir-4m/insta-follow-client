@@ -1,15 +1,16 @@
 FROM python:3.8-buster
 
-COPY ./project/requirements.txt /build/
+WORKDIR /app
 
-COPY ./confs/uwsgi.ini /build/
+COPY project/requirements.txt /app/
 
-COPY ./entrypoint.sh .
+COPY project/uwsgi.ini /app/
+
+COPY entrypoint.sh /
 
 RUN chmod +x /entrypoint.sh
 
 RUN pip install --upgrade pip
 
-RUN pip install -r /build/requirements.txt
+RUN pip install -r requirements.txt
 
-WORKDIR /app

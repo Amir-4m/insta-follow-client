@@ -204,10 +204,11 @@ def random_task():
         action_to_call = globals()[random.choice((
             'follow_suggested',
             'follow_new_user',
-            # 'follow_active_users',
+            'follow_active_users',
             'like_new_user_posts',
             'comment_new_user_posts',
-        ))]
+        ), weights=(10, 5, 3, 5, 1)
+        )]
         action_to_call.delay(insta_user_id)
 
     manageable_insta_user_ids = InstaUser.objects.manageable().values_list('user_id', flat=True).order_by('?')[:5]
@@ -216,5 +217,6 @@ def random_task():
             'change_profile_picture',
             'upload_new_user_post',
             'upload_new_user_story',
-        ))]
+        ), weights=(10, 5, 3)
+        )]
         action_to_call.delay(insta_user_id)
