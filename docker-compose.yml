@@ -27,7 +27,7 @@ services:
   celery-beat:
     build: .
     env_file: ${PROJECT_ENV}
-    command: celery -A conf beat -l info
+    command: celery -A conf beat -l info -s /var/run/celerybeat-schedule --pidfile=/var/run/celerybeat.pid
     volumes:
       - ./project:/app
       - ${PROJECT_PATH}/media:/media

@@ -18,7 +18,7 @@ from apps.insta_users.utils.instagram import (
     INSTAGRAM_USER_AGENT
 )
 
-from utils.images import resize_image
+# from utils.images import resize_image
 
 logger = logging.getLogger(__name__)
 
@@ -63,20 +63,15 @@ def upload_new_user_post(insta_user_id):
 
     category = random.choice(insta_user_categories)
     content = InstaImage.objects.posts().filter(categories=category).order_by('?')[0]
-    image = content.image
 
-    if image.width != image.height:
-        image = resize_image()
-    # if image.width > image.height:
-    #     image = get_thumbnail(content.image, f'x{image.height}', crop='center')
-    #
-    # if image.height > image.width:
-    #     image = get_thumbnail(content.image, f'{image.width}', crop='center top')
+    # image = content.image
+    # if image.width != image.height:
+    #     image, image_bytes = resize_image(image)
 
     try:
         logger.debug(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[content: {content.id}]")
         session = get_instagram_session(insta_user, set_proxy=False, user_agent=INSTAGRAM_USER_AGENT)
-        upload_instagram_post(session, image, content.caption)
+        upload_instagram_post(session, content.image, content.caption)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
 
@@ -199,24 +194,26 @@ def follow_active_users(insta_user_id):
 
 @periodic_task(run_every=crontab(minute='*/20'))
 def random_task():
-    new_insta_user_ids = InstaUser.objects.new().values_list('user_id', flat=True).order_by('?')[:10]
+    new_insta_user_ids = InstaUser.objects.new().values_list('user_id', flat=True).order_by('?')[:5]
     for insta_user_id in new_insta_user_ids:
-        action_to_call = globals()[random.choice((
-            'follow_suggested',
-            'follow_new_user',
-            'follow_active_users',
-            'like_new_user_posts',
-            'comment_new_user_posts',
-        ), weights=(10, 5, 3, 5, 1)
+        action_to_call = globals()[random.choice(
+            random.choices((
+                'follow_suggested',
+                'follow_new_user',
+                'follow_active_users',
+                'like_new_user_posts',
+                'comment_new_user_posts',
+            ), weights=(10, 5, 4, 5, 1), k=25)
         )]
         action_to_call.delay(insta_user_id)
 
     manageable_insta_user_ids = InstaUser.objects.manageable().values_list('user_id', flat=True).order_by('?')[:5]
     for insta_user_id in manageable_insta_user_ids:
-        action_to_call = globals()[random.choice((
-            'change_profile_picture',
-            'upload_new_user_post',
-            'upload_new_user_story',
-        ), weights=(10, 5, 3)
+        action_to_call = globals()[random.choice(
+            random.choices((
+                'change_profile_picture',
+                'upload_new_user_post',
+                'upload_new_user_story',
+            ), weights=(10, 7, 3), k=20)
         )]
         action_to_call.delay(insta_user_id)
