@@ -33,7 +33,6 @@ stages:
       - requirements.txt
       - Dockerfile
 
-
 .test:
   stage: test
   script:
@@ -61,3 +60,31 @@ build_production:
   extends:
     - .build
     - .production
+
+test_staging:
+  environment:
+    name: staging
+  extends:
+    - .test
+    - .staging
+
+test_production:
+  environment:
+    name: production
+  extends:
+    - .test
+    - .production
+
+deploy_staging:
+  environment:
+    name: staging
+  extends:
+    - .deploy
+    - .staging
+
+deploy_production:
+  environment:
+    name: production
+  extends:
+    - .deploy
+    - .productio
