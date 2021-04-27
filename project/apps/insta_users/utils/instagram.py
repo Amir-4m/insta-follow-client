@@ -1,4 +1,5 @@
 import logging
+
 import requests
 import random
 from json.decoder import JSONDecodeError
@@ -9,6 +10,7 @@ from fake_useragent import UserAgent
 
 from apps.insta_users.models import InstaAction
 from apps.proxies.models import Proxy
+from utils.images import resize_image
 
 logger = logging.getLogger(__name__)
 
@@ -340,8 +342,21 @@ def upload_instagram_post(session, image_field, caption=''):
         "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
     }
     session.headers.update(headers)
-    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
-    _s1.raise_for_status()
+
+    if image_field.width != image_field.height:
+        im_resized, buf_value, buf_tell = resize_image(image_field)
+        session.headers.update(
+            {
+                "x-entity-length": f"{buf_tell}",
+                "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{im_resized.height},"upload_media_width":{im_resized.width}}}'
+            }
+        )
+        _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(buf_value, 'rb'))
+        _s1.raise_for_status()
+
+    else:
+        _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
+        _s1.raise_for_status()
 
     headers = {
         "user-agent": INSTAGRAM_USER_AGENT,
