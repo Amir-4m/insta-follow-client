@@ -88,13 +88,13 @@ def insta_follow_test_user_upadte(insta_user):
 
     try:
         _r = requests.put(
-            f'{INSTA_FOLLOW_UPDATE_USER}{insta_user.user_id}/',
+            url=f'{INSTA_FOLLOW_UPDATE_USER}{insta_user.user_id}/',
             headers={'Authorization': f'Token {settings.INSTA_FOLLOW_TEST_USER_UPDATE_TOKEN}'},
             data=param
         )
         _r.raise_for_status()
     except Exception as e:
-        logger.error(f'[Instagram test user update failed]-[user_id: {insta_user.user_id}]-[err: {e}]')
+        logger.error(f'[insta_follow test user update failed]-[user_id: {insta_user.user_id}]-[err: {e}]')
 
 
 def insta_follow_get_orders(insta_user, action):
