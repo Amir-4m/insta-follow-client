@@ -78,11 +78,6 @@ def insta_follow_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
     insta_user.server_key = get_insta_follow_uuid(insta_user)
     insta_user.save()
-
-
-@shared_task
-def insta_follow_update_task(insta_user_id):
-    insta_user = InstaUser.objects.get(id=insta_user_id)
     insta_follow_test_user_upadte(insta_user)
 
 
@@ -125,7 +120,6 @@ def activate_insta_users():
 
     for insta_user_id in no_uuid_users:
         insta_follow_login_task.delay(insta_user_id)
-        insta_follow_update_task.delay(insta_user_id)
 
     # make Active Insta User which been blocked to NEW for simulator
     InstaUser.objects.filter(
