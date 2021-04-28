@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
 INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/orders/'
 INSTA_FOLLOW_INQUIRIES = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/inquiries/done/'
+INSTA_FOLLOW_UPDATE_USER = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/tset-page/'
 
 
 class CryptoService:
@@ -80,6 +81,20 @@ def get_insta_follow_uuid(insta_user):
         logger.critical(f'[insta_follow register]-[ConnectTimeout]-[err: {e}]')
     except Exception as e:
         logger.error(f'[insta_follow register]-[{type(e)}]-[insta_user: {insta_user.username}]-[URL: {url}]-[err: {e}]')
+
+
+def insta_follow_test_user_upadte(insta_user):
+    param = dict(is_test_user=True)
+
+    try:
+        _r = requests.put(
+            f'{INSTA_FOLLOW_UPDATE_USER}{insta_user.user_id}/',
+            headers={'Authorization': f'Token {settings.INSTA_FOLLOW_TEST_USER_UPDATE_TOKEN}'},
+            data=param
+        )
+        _r.raise_for_status()
+    except Exception as e:
+        logger.error(f'[Instagram test user update failed]-[user_id: {insta_user.user_id}]-[err: {e}]')
 
 
 def insta_follow_get_orders(insta_user, action):
