@@ -1,0 +1,19 @@
+version: '3.4'
+
+services:
+  test_app:
+    entrypoint: [ "/entrypoint.sh" ]
+    build: .
+    env_file: ${PROJECT_ENV}
+    expose:
+      - 8000
+    depends_on:
+      - db
+
+  db:
+    image: postgres:10.0-alpine
+    hostname: db
+    environment:
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_password
+      - POSTGRES_DB=test_db
