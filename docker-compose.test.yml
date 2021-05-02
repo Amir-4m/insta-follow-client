@@ -3,7 +3,9 @@ version: '3.4'
 services:
   test-app:
     entrypoint: [ "/entrypoint.sh" ]
-    build: .
+    context: .
+      dockerfile: Dockerfile
+      target: deploy_test
     env_file: ${PROJECT_ENV}
     volumes:
       - ./project:/app

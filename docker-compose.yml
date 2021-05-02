@@ -2,7 +2,9 @@ version: '3.4'
 
 services:
   django-app:
-    build: .
+    context: .
+      dockerfile: Dockerfile
+      target: deploy_build
     entrypoint: ["/entrypoint.sh"]
     env_file: ${PROJECT_ENV}
     command: uwsgi --ini uwsgi.ini
@@ -15,7 +17,9 @@ services:
       - 8000
 
   celery-worker:
-    build: .
+    context: .
+      dockerfile: Dockerfile
+      target: deploy_build
     env_file: ${PROJECT_ENV}
     command: celery -A conf worker -l info
     volumes:
@@ -25,7 +29,9 @@ services:
       - ${PROJECT_PATH}/logs:/logs
 
   celery-beat:
-    build: .
+    context: .
+      dockerfile: Dockerfile
+      target: deploy_build
     env_file: ${PROJECT_ENV}
     command: celery -A conf beat -l info -s /var/run/celerybeat-schedule --pidfile=
     volumes:
