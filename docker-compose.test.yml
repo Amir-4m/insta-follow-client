@@ -6,10 +6,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: deploy_test
+      target: test_build
     env_file: ${PROJECT_ENV}
-    volumes:
-      - ./project:/app
     depends_on:
       - test-db
 
