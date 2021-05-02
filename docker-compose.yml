@@ -2,7 +2,8 @@ version: '3.4'
 
 services:
   django-app:
-    context: .
+    build:
+      context: .
       dockerfile: Dockerfile
       target: deploy_build
     entrypoint: ["/entrypoint.sh"]
@@ -17,7 +18,8 @@ services:
       - 8000
 
   celery-worker:
-    context: .
+    build:
+      context: .
       dockerfile: Dockerfile
       target: deploy_build
     env_file: ${PROJECT_ENV}
@@ -29,7 +31,8 @@ services:
       - ${PROJECT_PATH}/logs:/logs
 
   celery-beat:
-    context: .
+    build:
+      context: .
       dockerfile: Dockerfile
       target: deploy_build
     env_file: ${PROJECT_ENV}

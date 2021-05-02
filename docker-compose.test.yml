@@ -3,7 +3,8 @@ version: '3.4'
 services:
   test-app:
     entrypoint: [ "/entrypoint.sh" ]
-    context: .
+    build:
+      context: .
       dockerfile: Dockerfile
       target: deploy_test
     env_file: ${PROJECT_ENV}
