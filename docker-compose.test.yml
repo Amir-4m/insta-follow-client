@@ -1,21 +1,18 @@
 version: '3.4'
 
 services:
-  test_app:
+  test-app:
     entrypoint: [ "/entrypoint.sh" ]
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: test_build
+    build: .
     env_file: ${PROJECT_ENV}
-    expose:
-      - 8000
+    volumes:
+      - ./project:/app
     depends_on:
-      - db
+      - test-db
 
-  db:
+  test-db:
     image: postgres:10.0-alpine
-    hostname: db
+    hostname: test_db
     environment:
       - POSTGRES_USER=test_user
       - POSTGRES_PASSWORD=test_password

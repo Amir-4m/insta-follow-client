@@ -48,10 +48,6 @@ stages:
   stage: deploy
   script:
     - docker-compose up -d
-  artifacts:
-    paths:
-      - "project/apps/*/migrations/0*.py"
-
 
 build_staging:
   environment:

@@ -2,15 +2,12 @@ version: '3.4'
 
 services:
   django-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deploy_build
+    build: .
     entrypoint: ["/entrypoint.sh"]
     env_file: ${PROJECT_ENV}
     command: uwsgi --ini uwsgi.ini
     volumes:
-      - ./project:/app
+      - ${PROJECT_PATH}/project:/app
       - ${PROJECT_PATH}/media:/media
       - ${PROJECT_PATH}/static:/static
       - ${PROJECT_PATH}/logs:/logs
@@ -18,27 +15,21 @@ services:
       - 8000
 
   celery-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deploy_build
+    build: .
     env_file: ${PROJECT_ENV}
     command: celery -A conf worker -l info
     volumes:
-      - ./project:/app
+      - ${PROJECT_PATH}/project:/app
       - ${PROJECT_PATH}/media:/media
       - ${PROJECT_PATH}/static:/static
       - ${PROJECT_PATH}/logs:/logs
 
   celery-beat:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deploy_build
+    build: .
     env_file: ${PROJECT_ENV}
     command: celery -A conf beat -l info -s /var/run/celerybeat-schedule --pidfile=
     volumes:
-      - ./project:/app
+      - ${PROJECT_PATH}/project:/app
       - ${PROJECT_PATH}/media:/media
       - ${PROJECT_PATH}/static:/static
       - ${PROJECT_PATH}/logs:/logs
