@@ -3,7 +3,10 @@ version: '3.4'
 services:
   test_app:
     entrypoint: [ "/entrypoint.sh" ]
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test_build
     env_file: ${PROJECT_ENV}
     expose:
       - 8000
