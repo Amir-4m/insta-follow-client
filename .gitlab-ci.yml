@@ -47,6 +47,8 @@ stages:
 .deploy:
   stage: deploy
   script:
+    - cd $PROJECT_PATH
+    - git pull
     - docker-compose up -d
 
 build_staging:
