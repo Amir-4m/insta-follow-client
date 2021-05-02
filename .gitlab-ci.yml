@@ -28,10 +28,6 @@ stages:
   script:
 #    - cat ${PROJECT_ENV} > project/.env
     - docker-compose build
-  only:
-    changes:
-      - requirements.txt
-      - Dockerfile
 
 .test:
   stage: test
