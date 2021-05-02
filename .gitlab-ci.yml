@@ -28,16 +28,13 @@ stages:
   script:
 #    - cat ${PROJECT_ENV} > project/.env
     - docker-compose build
-  only:
-    changes:
-      - requirements.txt
-      - Dockerfile
 
 .test:
   stage: test
   script:
     - docker-compose -f docker-compose.test.yml build
     - docker-compose -f docker-compose.test.yml run --rm test-app python manage.py test
+    - docker-compose -f docker-compose.test.yml down
   coverage: "/TOTAL.+ ([0-9]{1,3}%)/"
   artifacts:
     paths:
