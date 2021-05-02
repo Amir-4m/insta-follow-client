@@ -16,4 +16,4 @@ def resize_image(image_file):
     im_resized = im.crop(box)
     buf = io.BytesIO()
     im_resized.save(buf, format='JPEG')
-    return im_resized, buf.getvalue()
+    return im_resized, buf.getvalue(), buf.tell()

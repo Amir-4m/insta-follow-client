@@ -1,4 +1,5 @@
 import logging
+
 import requests
 import random
 from json.decoder import JSONDecodeError
@@ -9,6 +10,7 @@ from fake_useragent import UserAgent
 
 from apps.insta_users.models import InstaAction
 from apps.proxies.models import Proxy
+from utils.images import resize_image
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ INSTAGRAM_LEGACY_BASE_URL = 'https://i.instagram.com'
 #     'android_release': '4.3'
 # }
 # USER_AGENT = f'Instagram 10.26.0 Android ({android_version}/{android_release}; 320dpi; 720x1280; {manufacturer}; {model}; armani; qcom; en_US)'
-INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; Samsung; SM-A650G; Snapdragon 450; en_US)"
+# INSTAGRAM_USER_AGENT = "Instagram 10.15.0 Android (28/9; 411dpi; 1080x2220; Samsung; SM-A650G; Snapdragon 450; en_US)"
 INSTAGRAM_USER_AGENT = "Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Mobile Safari/537.36"
 
 ua = UserAgent()
@@ -330,17 +332,29 @@ def do_instagram_action(insta_user, order):
 def upload_instagram_post(session, image_field, caption=''):
     microtime = int(datetime.now().timestamp())
 
+    if image_field.width != image_field.height:
+        im_resized, image_size, image_data = resize_image(image_field)
+        image_width = im_resized.width
+        image_height = im_resized.height
+
+    else:
+        image_size = image_field.size
+        image_width = image_field.width
+        image_height = image_field.height
+        image_data = image_field.path
+
     headers = {
         "user-agent": INSTAGRAM_USER_AGENT,
         "content-type": "image/jpeg",
         "offset": "0",
         "x-entity-type": "image/jpeg",
-        "x-entity-length": f"{image_field.size}",
+        "x-entity-length": f"{image_size}",
         "x-entity-name": f"fb_uploader_{microtime}",
-        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
+        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_height},"upload_media_width":{image_width}}}',
     }
     session.headers.update(headers)
-    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
+
+    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_data, 'rb'))
     _s1.raise_for_status()
 
     headers = {
