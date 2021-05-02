@@ -7,6 +7,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: test_build
+    networks:
+      - test-network
     env_file: ${PROJECT_ENV}
     depends_on:
       - test-db
@@ -14,6 +16,8 @@ services:
   test-db:
     image: postgres:10.0-alpine
     hostname: test_db
+    networks:
+      - test-network
     environment:
       - POSTGRES_USER=test_user
       - POSTGRES_PASSWORD=test_password
