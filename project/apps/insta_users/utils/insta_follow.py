@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 INSTA_FOLLOW_LOGIN_URL = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/login-verification/'
 INSTA_FOLLOW_ORDERS_URL = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/orders/'
 INSTA_FOLLOW_INQUIRIES = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/inquiries/done/'
-INSTA_FOLLOW_UPDATE_USER = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/tset-page/'
+INSTA_FOLLOW_UPDATE_USER = f'{settings.INSTA_FOLLOW_BASE_URL}/api/v1/instagram/test-page/'
 
 
 class CryptoService:
