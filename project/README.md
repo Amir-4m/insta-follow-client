@@ -7,4 +7,5 @@ DEBUG = False
 
 INSTAFOLLOW_BASE_URL = https://instaflw.yourblueapi.com
 INSTAFOLLOW_ORDER_LIMIT
+INSTA_FOLLOW_TEST_USER_UPDATE_TOKEN = ''
 ```

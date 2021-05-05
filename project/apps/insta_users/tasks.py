@@ -14,7 +14,7 @@ from celery import shared_task
 from fake_useragent import UserAgent
 
 from .models import InstaUser, InstaAction
-from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done
+from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done, insta_follow_test_user_upadte
 from .utils.instagram import instagram_login, do_instagram_action, get_instagram_session, InstagramMediaClosed, INSTAGRAM_BASE_URL
 from .utils.selenium import SeleniumService
 
@@ -78,6 +78,7 @@ def insta_follow_login_task(insta_user_id):
     insta_user = InstaUser.objects.get(id=insta_user_id)
     insta_user.server_key = get_insta_follow_uuid(insta_user)
     insta_user.save()
+    insta_follow_test_user_upadte(insta_user)
 
 
 @shared_task(queue='instagram_login_selenium')
