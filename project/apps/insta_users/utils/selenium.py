@@ -1,9 +1,14 @@
 import logging
+import random
+import time
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.firefox.options import Options
 
 logger = logging.getLogger(__name__)
 
@@ -66,3 +71,85 @@ class SeleniumService(object):
         self.driver.quit()
 
         return cookies
+
+
+def instagram_sign_up():
+    profile = webdriver.FirefoxProfile()
+    profile.set_preference("general.useragent.override", 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0')
+    options = Options()
+    options.headless = True
+    insta_page = 'https://www.instagram.com/accounts/emailsignup/'
+    # temp_mail_page = 'https://www.mohmal.com/en/inbox'
+    temp_mail_page = 'https://email-fake.com/'
+    driver_insta = webdriver.Firefox(firefox_profile=profile)
+    driver_mail = webdriver.Firefox()
+    driver_insta.get(insta_page)
+    # driver.execute_script("window.open('" + temp_mail_page + "');")
+    driver_mail.get(temp_mail_page)
+    time.sleep(5)
+    # tabs = driver.window_handles
+    # email_element = driver_mail.find_element_by_xpath('//*[@id="email"]/div[1]')
+    email_element = driver_mail.find_element_by_xpath('//*[@id="copbtn"]')
+    email_element.click()
+
+    # driver.switch_to.window(tabs[0])
+
+    sign_up_email_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[1]/div/label/input')
+    sign_up_email_elem.send_keys(Keys.CONTROL, 'v')
+    time.sleep(1)
+
+    sign_up_name_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[2]/div/label/input')
+    sign_up_name_elem.send_keys('John Doe')
+    time.sleep(1)
+
+    # user_auto_generate_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[3]/div/label/input')
+    # user_auto_generate_elem.send_keys('hama13196889')
+    # time.sleep(1)
+
+    user_auto_generate_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[3]/div/div/div/button')
+    user_auto_generate_elem.click()
+    time.sleep(1)
+
+    password_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[4]/div/label/input')
+    password_elem.send_keys('1qazXSW@')
+    time.sleep(1)
+
+    sign_up_button_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[5]/div/button')
+    sign_up_button_elem.click()
+    time.sleep(5)
+
+    month_select = Select(driver_insta.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/div[1]/div/div[4]/div/div/span/span[1]/select'))
+    month_value = random.randint(1, 12)
+    month_select.select_by_value(str(month_value))
+    time.sleep(1)
+
+    day_select = Select(driver_insta.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/div[1]/div/div[4]/div/div/span/span[2]/select'))
+    day_value = random.randint(1, 28)
+    day_select.select_by_value(str(day_value))
+    time.sleep(1)
+
+    year_select = Select(driver_insta.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/div[1]/div/div[4]/div/div/span/span[3]/select'))
+    year_value = random.randint(1970, 2000)
+    year_select.select_by_value(str(year_value))
+    time.sleep(1)
+
+    next_btn_elem = driver_insta.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/div[1]/div/div[6]/button')
+    next_btn_elem.click()
+    time.sleep(60)
+
+    confirmation_code_element = driver_mail.find_element_by_xpath('/html/body/div[3]/div/div/div/div[2]/div[2]/div[4]/div[3]/table/tbody/tr/td/table/tbody/tr[4]/td/table/tbody/tr/td/table/tbody/tr[2]/td[2]/table/tbody/tr[2]/td[2]').text
+    print(confirmation_code_element)
+
+    refresh_btn = driver_mail.find_element_by_xpath('/html/body/div[2]/div/div[2]/table/tbody/tr[3]/td[1]/a/button')
+    refresh_btn.click()
+    time.sleep(5)
+
+    confirm_input = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div[2]/form/div/div[1]/input')
+    confirm_input.send_keys(confirmation_code_element)
+
+    next_btn = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div[2]/form/div/div[2]')
+    next_btn.click()
+
+
+
+
