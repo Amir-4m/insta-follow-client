@@ -48,13 +48,16 @@ class SeleniumService(object):
             login.submit()
 
             # waiting for save login info dialog to shows up
-            self.wait.until(EC.text_to_be_present_in_element(
-                (By.XPATH, '/html/body/div[1]/section/main/div/div/div/section/div/div[2]'),
-                'Save Your Login Info?'
-            ))
+            try:
+                self.wait.until(EC.text_to_be_present_in_element(
+                    (By.XPATH, '/html/body/div[1]/section/main/div/div/div/section/div/div[2]'),
+                    'Save Your Login Info?'
+                ))
+            except:
+                pass
 
-            # convert cookies from json to browser format
             cookies = "; ".join([f"{_c['name']}={_c['value']}" for _c in self.driver.get_cookies()])
+
             try:
                 self.driver.find_element_by_xpath("/html/body/div[1]/section/div[2]/div/p[2]/div/button/span").click()
             except:
