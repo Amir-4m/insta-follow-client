@@ -55,9 +55,10 @@ class SeleniumService(object):
 
             # convert cookies from json to browser format
             cookies = "; ".join([f"{_c['name']}={_c['value']}" for _c in self.driver.get_cookies()])
-
-            if self.driver.find_element_by_xpath("/html/body/div[1]/section/div[2]/div/p[1]/p[2]/div/div/span"):
+            try:
                 self.driver.find_element_by_xpath("/html/body/div[1]/section/div[2]/div/p[2]/div/button/span").click()
+            except:
+                pass
 
         except Exception as e:
             logger.error(f'getting instagram session id for user {username} failed due to: {e}')
