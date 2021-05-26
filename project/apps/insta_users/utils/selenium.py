@@ -79,14 +79,15 @@ class SeleniumService(object):
 
 @shared_task
 def instagram_sign_up():
+    PROXY = "78.47.222.225:3128"
     profile = webdriver.FirefoxProfile()
     profile.set_preference("general.useragent.override", 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0')
     options = Options()
-    options.headless = True
+    # options.headless = True
+    options.add_argument('--proxy-server=%s' % PROXY)
     insta_page = 'https://www.instagram.com/accounts/emailsignup/'
-    # temp_mail_page = 'https://www.mohmal.com/en/inbox'
     temp_mail_page = 'https://email-fake.com/'
-    driver_insta = webdriver.Firefox(firefox_profile=profile)
+    driver_insta = webdriver.Firefox(firefox_profile=profile, options=options)
     driver_mail = webdriver.Firefox()
     driver_insta.get(insta_page)
     # driver.execute_script("window.open('" + temp_mail_page + "');")
@@ -99,12 +100,14 @@ def instagram_sign_up():
 
     # driver.switch_to.window(tabs[0])
 
-    sign_up_email_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[1]/div/label/input')
+    # sign_up_email_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[1]/div/label/input')
+    sign_up_email_elem = driver_insta.find_element(By.NAME, 'emailOrPhone')
     # sign_up_email_elem.send_keys(Keys.CONTROL, 'v')
     sign_up_email_elem.send_keys(email_element)
     time.sleep(1)
 
-    sign_up_name_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[2]/div/label/input')
+    # sign_up_name_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[2]/div/label/input')
+    sign_up_name_elem = driver_insta.find_element(By.NAME, 'fullName')
     full_name = names.get_full_name()
     sign_up_name_elem.send_keys(full_name)
     time.sleep(10)
@@ -113,18 +116,22 @@ def instagram_sign_up():
     # user_auto_generate_elem.send_keys('hama13196889')
     # time.sleep(1)
 
-    user_auto_generate_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[3]/div/div/div/button')
+    # user_auto_generate_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[3]/div/div/div/button')
+    user_auto_generate_elem = driver_insta.find_element(By.CSS_SELECTOR, 'button.sqdOP.yWX7d.y3zKF')
     user_auto_generate_elem.click()
     time.sleep(1)
 
-    password_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[4]/div/label/input')
+    # password_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[4]/div/label/input')
+    password_elem = driver_insta.find_element(By.NAME, 'password')
     pwo = PasswordGenerator()
     password = pwo.generate()
     password_elem.send_keys(password)
     time.sleep(1)
 
-    sign_up_button_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[5]/div/button')
-    sign_up_button_elem.click()
+    # sign_up_button_elem = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div/form/div[5]/div/button')
+    sign_up_button_elem = driver_insta.find_elements(By.CSS_SELECTOR, 'button.sqdOP.L3NKy.y3zKF')
+    print(sign_up_button_elem)
+    sign_up_button_elem[0].click()
     time.sleep(5)
 
     month_select = Select(driver_insta.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/div[1]/div/div[4]/div/div/span/span[1]/select'))
@@ -158,6 +165,9 @@ def instagram_sign_up():
 
     next_btn = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div[2]/form/div/div[2]')
     next_btn.click()
+    time.sleep(10)
+    driver_insta.quit()
+    driver_mail.quit()
 
     user_name = email_element.split('@')[0]
     print(user_name)
