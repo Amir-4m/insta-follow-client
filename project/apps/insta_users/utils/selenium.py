@@ -88,11 +88,15 @@ def instagram_sign_up():
         driver_insta = webdriver.Firefox(firefox_profile=profile)
         driver_mail = webdriver.Firefox()
         driver_insta.get(insta_page)
-        if driver_insta.find_element(By.CSS_SELECTOR, 'button.aOOlW.bIiDR'):
+        try:
             driver_insta.find_element(By.CSS_SELECTOR, 'button.aOOlW.bIiDR').click()
+        except Exception:
+            pass
 
         driver_mail.get(temp_mail_page)
-
+        time.sleep(5)
+        # email_element_wait = WebDriverWait(driver_mail, 30)
+        # email_element_wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="email_ch_text"]')))
         email_element = driver_mail.find_element_by_xpath('//*[@id="email_ch_text"]').text
 
         sign_up_email_elem = driver_insta.find_element(By.NAME, 'emailOrPhone')
@@ -145,10 +149,11 @@ def instagram_sign_up():
 
         next_btn = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div[2]/form/div/div[2]')
         next_btn.click()
+        time.sleep(20)
         driver_insta.quit()
         driver_mail.quit()
 
-        user_name = email_element.split('@')[0]
+        user_name = email_element
 
         InstaUser.objects.create(username=user_name, password=password)
 
