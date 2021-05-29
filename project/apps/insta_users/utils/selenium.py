@@ -10,7 +10,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.firefox.options import Options
 
 from apps.insta_users.models import InstaUser
 
@@ -112,7 +111,7 @@ def instagram_sign_up():
 
         sign_up_button_elem = driver_insta.find_elements(By.CSS_SELECTOR, 'button.sqdOP.L3NKy.y3zKF')
         sign_up_button_elem[-1].click()
-        time.sleep(5)
+        time.sleep(10)
 
         month_select = Select(driver_insta.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/div[1]/div/div[4]/div/div/span/span[1]/select'))
         month_value = random.randint(1, 12)
