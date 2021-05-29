@@ -88,6 +88,9 @@ def instagram_sign_up():
         driver_insta = webdriver.Firefox(firefox_profile=profile)
         driver_mail = webdriver.Firefox()
         driver_insta.get(insta_page)
+        if driver_insta.find_element(By.CSS_SELECTOR, 'button.aOOlW.bIiDR'):
+            driver_insta.find_element(By.CSS_SELECTOR, 'button.aOOlW.bIiDR').click()
+
         driver_mail.get(temp_mail_page)
 
         email_element = driver_mail.find_element_by_xpath('//*[@id="email_ch_text"]').text
