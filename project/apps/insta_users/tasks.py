@@ -178,6 +178,6 @@ def cleanup_disabled_insta_users():
     #         insta_user.delete()
 
 
-@periodic_task(run_every=crontab(minute='*/15'))
+@periodic_task(run_every=crontab(minute='*/5'))
 def p_instagram_sign_up_task():
     instagram_sign_up.delay()

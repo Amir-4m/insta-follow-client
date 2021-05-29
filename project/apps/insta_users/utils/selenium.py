@@ -78,15 +78,18 @@ class SeleniumService(object):
 
 @shared_task
 def instagram_sign_up():
+    logger.info("Instagram Signing Up has been Started")
+    profile = webdriver.FirefoxProfile()
+    profile.set_preference("general.useragent.override",
+                           'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0')
+
+    insta_page = 'https://www.instagram.com/accounts/emailsignup/'
+    temp_mail_page = 'https://email-fake.com/'
+
+    driver_insta = webdriver.Firefox(firefox_profile=profile)
+    driver_mail = webdriver.Firefox()
+
     try:
-        profile = webdriver.FirefoxProfile()
-        profile.set_preference("general.useragent.override", 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0')
-
-        insta_page = 'https://www.instagram.com/accounts/emailsignup/'
-        temp_mail_page = 'https://email-fake.com/'
-
-        driver_insta = webdriver.Firefox(firefox_profile=profile)
-        driver_mail = webdriver.Firefox()
         driver_insta.get(insta_page)
         try:
             driver_insta.find_element(By.CSS_SELECTOR, 'button.aOOlW.bIiDR').click()
@@ -135,12 +138,12 @@ def instagram_sign_up():
         next_btn_elem = driver_insta.find_element_by_xpath('//*[@id="react-root"]/section/main/div/div/div[1]/div/div[6]/button')
         next_btn_elem.click()
 
+        time.sleep(30)
+        refresh_btn = driver_mail.find_element_by_xpath('/html/body/div[2]/div/div[2]/table/tbody/tr[3]/td[1]/a/button')
+        refresh_btn.click()
+
         mail_wait = WebDriverWait(driver_mail, 300)
         mail_wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/div[3]/div/div/div/div[2]/div[2]/div[4]/div[3]/table/tbody/tr/td/table/tbody/tr[4]/td/table/tbody/tr/td/table/tbody/tr[2]/td[2]/table/tbody/tr[2]/td[2]')))
-
-        # refresh_btn = driver_mail.find_element_by_xpath('/html/body/div[2]/div/div[2]/table/tbody/tr[3]/td[1]/a/button')
-        # refresh_btn.click()
-        # time.sleep(5)
 
         confirmation_code_element = driver_mail.find_element_by_xpath('/html/body/div[3]/div/div/div/div[2]/div[2]/div[4]/div[3]/table/tbody/tr/td/table/tbody/tr[4]/td/table/tbody/tr/td/table/tbody/tr[2]/td[2]/table/tbody/tr[2]/td[2]').text
 
@@ -150,15 +153,16 @@ def instagram_sign_up():
         next_btn = driver_insta.find_element_by_xpath('/html/body/div[1]/section/main/div/div/div[1]/div[2]/form/div/div[2]')
         next_btn.click()
         time.sleep(20)
-        driver_insta.quit()
-        driver_mail.quit()
 
-        user_name = email_element
+        InstaUser.objects.create(username=email_element, password=password)
 
-        InstaUser.objects.create(username=user_name, password=password)
+        logger.info(f'Instagram User Created with the Credential of [username: {email_element}] and [password: {password}]')
 
     except Exception as e:
         logger.error(f'Instagram sign up failed -- error: {str(e)}')
+
+    driver_insta.quit()
+    driver_mail.quit()
 
 
 
