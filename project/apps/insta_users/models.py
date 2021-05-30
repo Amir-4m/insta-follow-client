@@ -102,6 +102,7 @@ class InstaUser(models.Model):
     status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_NEW, db_index=True)
     manage_content = models.BooleanField(_("manage"), default=True, help_text=_("manage profile content"))
     description = models.TextField(_("description"), blank=True)
+    fake_user = models.BooleanField(_('fake User'), default=False)
 
     blocked_data = models.JSONField(_('blocked data'), default=dict, editable=False)
 
