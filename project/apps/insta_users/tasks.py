@@ -16,7 +16,7 @@ from fake_useragent import UserAgent
 from .models import InstaUser, InstaAction
 from .utils.insta_follow import get_insta_follow_uuid, insta_follow_get_orders, insta_follow_order_done, insta_follow_test_user_upadte
 from .utils.instagram import instagram_login, do_instagram_action, get_instagram_session, InstagramMediaClosed, INSTAGRAM_BASE_URL
-from .utils.selenium import SeleniumService
+from .utils.selenium import SeleniumService, instagram_sign_up
 
 logger = logging.getLogger(__name__)
 
@@ -176,3 +176,8 @@ def cleanup_disabled_insta_users():
     #     if should_be_deleted:
     #         logger.info(f"{insta_user.username} deleted!!")
     #         insta_user.delete()
+
+
+@periodic_task(run_every=crontab(minute='*/5'))
+def p_instagram_sign_up_task():
+    instagram_sign_up.delay()
