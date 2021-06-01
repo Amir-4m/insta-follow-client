@@ -8,6 +8,7 @@ from celery import shared_task
 from password_generator import PasswordGenerator
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
@@ -84,6 +85,8 @@ class SeleniumService(object):
 
 @shared_task
 def instagram_sign_up():
+    options = Options()
+    options.headless = True
     logger.info("Instagram Signing Up has been Started")
     profile = webdriver.FirefoxProfile()
     profile.set_preference("general.useragent.override",
@@ -101,8 +104,8 @@ def instagram_sign_up():
     insta_page = 'https://www.instagram.com/accounts/emailsignup/'
     temp_mail_page = 'https://email-fake.com/'
 
-    driver_insta = webdriver.Firefox(firefox_profile=profile)
-    driver_mail = webdriver.Firefox()
+    driver_insta = webdriver.Firefox(firefox_profile=profile, options=options)
+    driver_mail = webdriver.Firefox(options=options)
 
     try:
         driver_insta.get(insta_page)
