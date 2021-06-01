@@ -27,7 +27,7 @@ stages:
   stage: build
   script:
 #    - cat ${PROJECT_ENV} > project/.env
-    - docker-compose build --no-cache
+    - docker-compose -f docker-compose.yml build
 
 .test:
   stage: test
@@ -47,7 +47,7 @@ stages:
   script:
     - cd $PROJECT_PATH
     - git pull
-    - docker-compose up -d
+    - docker-compose -f docker-compose.yml  up -d
 
 build_staging:
   environment:
