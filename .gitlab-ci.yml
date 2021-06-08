@@ -1,6 +1,6 @@
 stages:
   - build
-  - test
+#  - test
   - deploy
 
 .staging:
@@ -63,12 +63,12 @@ build_production:
     - .build
     - .production
 
-test_staging:
-  environment:
-    name: staging
-  extends:
-    - .test
-    - .staging
+#test_staging:
+#  environment:
+#    name: staging
+#  extends:
+#    - .test
+#    - .staging
 
 test_production:
   environment:
