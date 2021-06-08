@@ -27,12 +27,12 @@ stages:
   stage: build
   script:
 #    - cat ${PROJECT_ENV} > project/.env
-    - docker-compose -f docker-compose.yml build --no-cache
+    - docker-compose -f docker-compose.yml build
 
 .test:
   stage: test
   script:
-    - docker-compose -f docker-compose.test.yml build --no-cache
+    - docker-compose -f docker-compose.test.yml build
     - docker-compose -f docker-compose.test.yml run --rm test-app python manage.py test
     - docker-compose -f docker-compose.test.yml down --remove-orphans
   coverage: "/TOTAL.+ ([0-9]{1,3}%)/"
