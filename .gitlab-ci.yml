@@ -65,14 +65,14 @@ build_production:
 
 test_staging:
   environment:
-    name: testing
+    name: staging
   extends:
     - .test
     - .staging
 
 test_production:
   environment:
-    name: testing
+    name: production
   extends:
     - .test
     - .production
