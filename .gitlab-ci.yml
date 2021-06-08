@@ -77,16 +77,16 @@ build_production:
 #    - .test
 #    - .production
 #
-#deploy_staging:
-#  environment:
-#    name: staging
-#  extends:
-#    - .deploy
-#    - .staging
-#
-#deploy_production:
-#  environment:
-#    name: production
-#  extends:
-#    - .deploy
-#    - .production
+deploy_staging:
+  environment:
+    name: staging
+  extends:
+    - .deploy
+    - .staging
+
+deploy_production:
+  environment:
+    name: production
+  extends:
+    - .deploy
+    - .production
