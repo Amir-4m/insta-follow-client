@@ -86,7 +86,6 @@ class SeleniumService(object):
 @shared_task(queue='instagram_signup_selenium')
 def instagram_sign_up():
     options = Options()
-    options.headless = True
     logger.info("Instagram Signing Up has been Started")
     profile = webdriver.FirefoxProfile()
     profile.set_preference("general.useragent.override",
