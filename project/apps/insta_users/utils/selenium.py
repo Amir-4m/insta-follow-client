@@ -83,7 +83,7 @@ class SeleniumService(object):
         return cookies
 
 
-@shared_task
+@shared_task(queue='instagram_signup_selenium')
 def instagram_sign_up():
     options = Options()
     options.headless = True
