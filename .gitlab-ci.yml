@@ -1,6 +1,6 @@
 stages:
   - build
-  - test
+#  - test
   - deploy
 
 .staging:
@@ -29,17 +29,17 @@ stages:
 #    - cat ${PROJECT_ENV} > project/.env
     - docker-compose -f docker-compose.yml build
 
-.test:
-  stage: test
-  script:
-    - docker-compose -f docker-compose.test.yml up
-    - docker-compose -f docker-compose.test.yml down --remove-orphans
-  coverage: "/TOTAL.+ ([0-9]{1,3}%)/"
-  artifacts:
-    paths:
-      - htmlcov
-  environment:
-    name: testing
+#.test:
+#  stage: test
+#  script:
+#    - docker-compose -f docker-compose.test.yml up
+#    - docker-compose -f docker-compose.test.yml down --remove-orphans
+#  coverage: "/TOTAL.+ ([0-9]{1,3}%)/"
+#  artifacts:
+#    paths:
+#      - htmlcov
+#  environment:
+#    name: testing
 
 .deploy:
   stage: deploy
@@ -62,19 +62,19 @@ build_production:
     - .build
     - .production
 
-test_staging:
-  environment:
-    name: staging
-  extends:
-    - .test
-    - .staging
-
-test_production:
-  environment:
-    name: production
-  extends:
-    - .test
-    - .production
+#test_staging:
+#  environment:
+#    name: staging
+#  extends:
+#    - .test
+#    - .staging
+#
+#test_production:
+#  environment:
+#    name: production
+#  extends:
+#    - .test
+#    - .production
 
 deploy_staging:
   environment:
