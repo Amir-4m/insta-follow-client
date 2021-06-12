@@ -68,6 +68,18 @@ class CommentBlockFilter(GeneralFilter):
     filter_params = dict(blocked_data__has_key=InstaAction.ACTION_COMMENT)
 
 
+class UserIdFilter(GeneralFilter):
+    title = _('has user id')
+    parameter_name = 'u_i'
+
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.exclude(user_id=None)
+        if self.value() == '2':
+            return queryset.filter(user_id=None)
+        return queryset
+
+
 @admin.register(InstaContentCategory)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_time')
@@ -77,7 +89,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class InstaUserAdmin(admin.ModelAdmin):
     action_form = RemoveBlockActionForm
     list_display = ("username", "created_time", "updated_time", "user_id", "manage_content", "status", "blocked", "has_session", "has_server_key", "fake_user")
-    list_filter = ("status", "manage_content", "fake_user", HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
+    list_filter = ("status", "manage_content", "fake_user", UserIdFilter, HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
     date_hierarchy = "created_time"
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
