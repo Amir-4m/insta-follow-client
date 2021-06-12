@@ -87,7 +87,8 @@ def instagram_login_task(insta_user_id):
     # instagram_login(insta_user)
     user_agent = ua.random
     session_cookie = SeleniumService(user_agent).get_instagram_session_id(insta_user.username, insta_user.password)
-    if session_cookie:
+    login_succeeded = "ds_user_id" in session_cookie
+    if login_succeeded:
         insta_user.session = session_cookie
         insta_user.user_agent = user_agent
         insta_user.set_proxy()
