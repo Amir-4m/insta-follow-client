@@ -48,7 +48,8 @@ def change_profile_picture(insta_user_id):
     try:
         session = get_instagram_session(insta_user)
         if has_instagram_profile_picture(insta_user, session) is False:
-            logger.debug(f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[content: {content.id}]")
+            logger.debug(
+                f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[content: {content.id}]")
             change_instagram_profile_pic(insta_user, content.image, session)
     except Exception as e:
         logger.warning(f"[Simulator change_profile_picture]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
@@ -101,7 +102,8 @@ def comment_new_user_posts(insta_user_id):
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
     insta_user_posts = get_instagram_profile_posts(insta_user)
 
-    action_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_COMMENT).order_by('?')[:MAX_ACTION_EACH_TURN]
+    action_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_COMMENT).order_by('?')[
+                   :MAX_ACTION_EACH_TURN]
     for action_user in action_users:
         # random_posts = [i["id"] for i in random.choices(insta_user_posts, k=min(1, len(insta_user_posts)//3))]
         random_posts = insta_user_posts
@@ -109,11 +111,13 @@ def comment_new_user_posts(insta_user_id):
             comment = Sentence.objects.order_by('?')[0]
             order['comments'] = [comment]
             order['entity_id'] = data['node']['id']
-            logger.debug(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[order: {order['entity_id']}]-[comment: {comment}]")
+            logger.debug(
+                f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[order: {order['entity_id']}]-[comment: {comment}]")
             try:
                 do_instagram_action(action_user, order)
             except Exception as e:
-                logger.warning(f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[comment: {comment}]-[{type(e)}]-[err: {e}]")
+                logger.warning(
+                    f"[Simulator comment_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[comment: {comment}]-[{type(e)}]-[err: {e}]")
                 break
             time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
@@ -125,17 +129,20 @@ def like_new_user_posts(insta_user_id):
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
     insta_user_posts = get_instagram_profile_posts(insta_user)
 
-    action_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_LIKE).order_by('?')[:MAX_ACTION_EACH_TURN]
+    action_users = InstaUser.objects.new().exclude(blocked_data__has_key=InstaAction.ACTION_LIKE).order_by('?')[
+                   :MAX_ACTION_EACH_TURN]
     for action_user in action_users:
         # random_posts = [i["id"] for i in random.choices(insta_user_posts, k=min(1, len(insta_user_posts)//3))]
         random_posts = insta_user_posts
         for data in random_posts:
             order['entity_id'] = data['node']['id']
-            logger.debug(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[order: {order['entity_id']}]")
+            logger.debug(
+                f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[order: {order['entity_id']}]")
             try:
                 do_instagram_action(action_user, order)
             except Exception as e:
-                logger.warning(f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]")
+                logger.warning(
+                    f"[Simulator like_new_user_posts]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]")
                 break
             time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
@@ -154,7 +161,8 @@ def follow_suggested(insta_user_id):
         try:
             do_instagram_action(insta_user, order)
         except Exception as e:
-            logger.warning(f"[Simulator follow_suggested]-[insta_user: {insta_user.username}]-[suggested: {order['entity_id']}]-[{type(e)}]-[err: {e}]")
+            logger.warning(
+                f"[Simulator follow_suggested]-[insta_user: {insta_user.username}]-[suggested: {order['entity_id']}]-[{type(e)}]-[err: {e}]")
             break
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
@@ -164,12 +172,14 @@ def follow_new_user(insta_user_id):
     action = InstaAction.get_action_from_key(InstaAction.ACTION_FOLLOW)
     order = dict(action=InstaAction.ACTION_FOLLOW, entity_id=insta_user_id, id=0)
 
-    action_users = InstaUser.objects.live().exclude(blocked_data__has_key=InstaAction.ACTION_FOLLOW).order_by('?')[:MAX_ACTION_EACH_TURN]
+    action_users = InstaUser.objects.live().exclude(blocked_data__has_key=InstaAction.ACTION_FOLLOW).order_by('?')[
+                   :MAX_ACTION_EACH_TURN]
     for action_user in action_users:
         try:
             do_instagram_action(action_user, order)
         except Exception as e:
-            logger.warning(f'[Simulator follow_new_user]-[insta_user: {insta_user_id}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]')
+            logger.warning(
+                f'[Simulator follow_new_user]-[insta_user: {insta_user_id}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]')
             continue
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
@@ -188,7 +198,8 @@ def follow_active_users(insta_user_id):
         try:
             do_instagram_action(insta_user, order)
         except Exception as e:
-            logger.warning(f'[Simulator follow_active_users]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]')
+            logger.warning(
+                f'[Simulator follow_active_users]-[insta_user: {insta_user.username}]-[action_user: {action_user.username}]-[{type(e)}]-[err: {e}]')
             break
         time.sleep(settings.INSTA_FOLLOW_SETTINGS[f"delay_{action}"])
 
@@ -207,7 +218,7 @@ def random_task():
                 'comment_new_user_posts',
             ), weights=(10, 5, 4, 5, 1), k=25)
         )]
-        action_to_call.delay(insta_user_id)
+        action_to_call.delay(args=(insta_user_id,), countdown=3)
 
     manageable_insta_user_ids = InstaUser.objects.manageable().values_list('user_id', flat=True).order_by('?')[:50]
     print(manageable_insta_user_ids.count())
@@ -220,4 +231,4 @@ def random_task():
                 'upload_new_user_story',
             ), weights=(10, 7, 3), k=20)
         )]
-        action_to_call.delay(insta_user_id)
+        action_to_call.apply_async(args=(insta_user_id,), countdown=3)
