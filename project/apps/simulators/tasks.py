@@ -59,6 +59,7 @@ def upload_new_user_post(insta_user_id):
     insta_user = InstaUser.objects.get(user_id=insta_user_id)
     insta_user_categories = list(insta_user.categories.all())
     if not insta_user_categories:
+        logger.warning(f"[Simulator upload_new_user_post - no category]-[insta_user: {insta_user.username}]")
         return
 
     category = random.choice(insta_user_categories)
