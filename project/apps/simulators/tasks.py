@@ -194,7 +194,7 @@ def follow_active_users(insta_user_id):
 
 @periodic_task(run_every=crontab(minute='*/30'))
 def random_task():
-    new_insta_user_ids = InstaUser.objects.new().values_list('user_id', flat=True).order_by('?')[:5]
+    new_insta_user_ids = InstaUser.objects.new().values_list('user_id', flat=True).order_by('?')[:50]
     for insta_user_id in new_insta_user_ids:
         action_to_call = globals()[random.choice(
             random.choices((
@@ -207,7 +207,7 @@ def random_task():
         )]
         action_to_call.delay(insta_user_id)
 
-    manageable_insta_user_ids = InstaUser.objects.manageable().values_list('user_id', flat=True).order_by('?')[:5]
+    manageable_insta_user_ids = InstaUser.objects.manageable().values_list('user_id', flat=True).order_by('?')[:50]
     for insta_user_id in manageable_insta_user_ids:
         action_to_call = globals()[random.choice(
             random.choices((
