@@ -1,5 +1,22 @@
+import os
+
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+
+
+def image_extension_validator(image):
+    ext = os.path.splitext(f'images/{image}')[1]
+    valid_extensions = ['.jpg', '.jpeg']
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension.')
+
+
+def image_aspect_validator(image):
+    height = image.height
+    width = image.width
+    if width != height:
+        raise ValidationError("Image aspect ratio is not allowed")
 
 
 class InstaContent(models.Model):
@@ -35,7 +52,7 @@ class InstaImage(InstaContent):
         (TYPE_PROFILE, _("profile")),
     )
 
-    image = models.ImageField(_('image'), upload_to='images')
+    image = models.ImageField(_('image'), upload_to='images', validators=[image_extension_validator, image_aspect_validator], help_text="Aspect ratio should be 1080x1080")
     caption = models.TextField(_('caption'), blank=True)
 
     content_type = models.CharField(_("type"), max_length=8, choices=CONTENT_TYPE_CHOICES, db_index=True)
