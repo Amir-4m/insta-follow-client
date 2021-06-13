@@ -1,3 +1,4 @@
+import io
 import logging
 
 import requests
@@ -355,7 +356,8 @@ def upload_instagram_post(session, image_field, caption=''):
     session.headers.update(headers)
 
     with open(image_data, 'rb') as image_file:
-        _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=image_file)
+        data = io.BytesIO(image_file.read())
+        _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=data)
         _s1.raise_for_status()
 
     headers = {
