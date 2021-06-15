@@ -102,7 +102,7 @@ class InstaUser(models.Model):
     server_key = models.UUIDField(_('server Key'), blank=True, null=True, help_text=_('insta follow server key'))
 
     status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_NEW, db_index=True)
-    manage_content = models.BooleanField(_("manage"), default=True, help_text=_("manage profile content"))
+    manage_content = models.BooleanField(_("manage"), default=False, help_text=_("manage profile content"))
     description = models.TextField(_("description"), blank=True)
     fake_user = models.BooleanField(_('fake User'), default=False)
 
