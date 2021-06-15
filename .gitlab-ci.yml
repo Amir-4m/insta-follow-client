@@ -46,7 +46,7 @@ stages:
   script:
     - cd $PROJECT_PATH
     - git pull
-    - docker-compose -f docker-compose.yml up -d --build
+    - docker-compose -f docker-compose.yml up -d --build --force-recreate
 
 build_staging:
   environment:
