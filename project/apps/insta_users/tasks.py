@@ -93,7 +93,7 @@ def instagram_login_task(insta_user_id):
         insta_user.user_agent = user_agent
         insta_user.set_proxy()
     else:
-        insta_user.status = InstaUser.STATUS_LOGIN_FAILED
+        insta_user.status = InstaUser.STATUS_LOGIN_UNSUCCESSFUL
 
     insta_user.save()
 
@@ -176,6 +176,14 @@ def cleanup_disabled_insta_users():
         if should_be_deleted:
             logger.info(f"{insta_user.username} deleted!!")
             insta_user.delete()
+
+
+@periodic_task(run_every=crontab(hour='*'))
+def unsuccessful_login_new():
+    InstaUser.objects.filter(
+        status=InstaUser.STATUS_LOGIN_UNSUCCESSFUL,
+        updated_time__lt=timezone.now() - timezone.timedelta(hours=1)
+    ).update(status=InstaUser.STATUS_NEW)
 
 
 @periodic_task(run_every=crontab(minute='*/5'))
