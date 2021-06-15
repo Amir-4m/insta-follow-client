@@ -13,3 +13,4 @@ selenium==3.141.0
 beautifulsoup4
 names==0.3.0
 random-password-generator==2.1.0
+django-celery-beat
