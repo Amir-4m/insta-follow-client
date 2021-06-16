@@ -39,7 +39,7 @@ services:
       target: deploy_build
     env_file: ${PROJECT_ENV}
     restart: always
-    command: celery -A conf beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler --pidfile=
+    command: celery -A conf beat -l info --pidfile=
     volumes:
       - ${PROJECT_PATH}/project:/app
       - ${PROJECT_PATH}/media:/media
