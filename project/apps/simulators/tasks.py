@@ -72,7 +72,7 @@ def upload_new_user_post(insta_user_id):
 
     try:
         logger.debug(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[content: {content.id}]")
-        session = get_instagram_session(insta_user, set_proxy=False, user_agent=INSTAGRAM_USER_AGENT)
+        session = get_instagram_session(insta_user, set_proxy=True, user_agent=INSTAGRAM_USER_AGENT)
         upload_instagram_post(session, content.image, content.caption)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_post]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
@@ -89,7 +89,7 @@ def upload_new_user_story(insta_user_id):
     content = InstaImage.objects.stories().filter(categories=category).order_by('?')[0]
     try:
         logger.debug(f"[Simulator upload_new_user_story]-[insta_user: {insta_user.username}]-[content: {content.id}]")
-        session = get_instagram_session(insta_user, set_proxy=False, user_agent=INSTAGRAM_USER_AGENT)
+        session = get_instagram_session(insta_user, set_proxy=True, user_agent=INSTAGRAM_USER_AGENT)
         upload_instagram_story(session, content.image)
     except Exception as e:
         logger.warning(f"[Simulator upload_new_user_story]-[insta_user: {insta_user.username}]-[{type(e)}]-[err: {e}]")
