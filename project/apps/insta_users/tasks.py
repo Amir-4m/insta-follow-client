@@ -93,7 +93,7 @@ def instagram_login_task(insta_user_id):
         insta_user.user_agent = user_agent
         insta_user.set_proxy()
     else:
-        insta_user.status = InstaUser.STATUS_LOGIN_FAILED
+        insta_user.status = InstaUser.STATUS_LOGIN_UNSUCCESSFUL
 
     insta_user.save()
 
@@ -160,23 +160,30 @@ def cleanup_disabled_insta_users():
         updated_time__lt=timezone.now() - timezone.timedelta(days=3)
     ).update(status=InstaUser.STATUS_REMOVED)
 
-    # TODO: uncomment
-    # insta_users = InstaUser.objects.filter(
-    #     status=InstaUser.STATUS_REMOVED,
-    #     updated_time__lt=timezone.now() - timezone.timedelta(days=10)
-    # )
-    # for insta_user in insta_users:
-    #     if insta_user.session:
-    #         session = get_instagram_session(insta_user)
-    #         link = f"{INSTAGRAM_BASE_URL}/{insta_user.username}/?__a=1"
-    #         _s = session.get(link)
-    #         should_be_deleted = _s.status_code == "404"
-    #     else:
-    #         should_be_deleted = True
-    #
-    #     if should_be_deleted:
-    #         logger.info(f"{insta_user.username} deleted!!")
-    #         insta_user.delete()
+    insta_users = InstaUser.objects.filter(
+        status=InstaUser.STATUS_REMOVED,
+        updated_time__lt=timezone.now() - timezone.timedelta(days=10)
+    )
+    for insta_user in insta_users:
+        if insta_user.session:
+            session = get_instagram_session(insta_user)
+            link = f"{INSTAGRAM_BASE_URL}/{insta_user.username}/?__a=1"
+            _s = session.get(link)
+            should_be_deleted = _s.status_code == "404"
+        else:
+            should_be_deleted = True
+
+        if should_be_deleted:
+            logger.info(f"{insta_user.username} deleted!!")
+            insta_user.delete()
+
+
+@periodic_task(run_every=crontab(hour='*'))
+def unsuccessful_login_new():
+    InstaUser.objects.filter(
+        status=InstaUser.STATUS_LOGIN_UNSUCCESSFUL,
+        updated_time__lt=timezone.now() - timezone.timedelta(hours=1)
+    ).update(status=InstaUser.STATUS_NEW)
 
 
 @periodic_task(run_every=crontab(minute='*/5'))

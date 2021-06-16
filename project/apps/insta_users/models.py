@@ -77,6 +77,7 @@ class InstaUser(models.Model):
     STATUS_DISABLED = 31
     STATUS_LOGIN_FAILED = 40
     STATUS_LOGIN_LIMIT = 41
+    STATUS_LOGIN_UNSUCCESSFUL = 42
 
     STATUS_CHOICES = (
         (STATUS_NEW, _("new")),
@@ -85,6 +86,7 @@ class InstaUser(models.Model):
         (STATUS_DISABLED, _("disabled")),
         (STATUS_LOGIN_FAILED, _("login failed")),
         (STATUS_LOGIN_LIMIT, _("login limited")),
+        (STATUS_LOGIN_UNSUCCESSFUL, _("login unsuccessful"))
     )
 
     created_time = models.DateTimeField(_('created time'), auto_now_add=True)
@@ -100,7 +102,7 @@ class InstaUser(models.Model):
     server_key = models.UUIDField(_('server Key'), blank=True, null=True, help_text=_('insta follow server key'))
 
     status = models.PositiveSmallIntegerField(_("Status"), choices=STATUS_CHOICES, default=STATUS_NEW, db_index=True)
-    manage_content = models.BooleanField(_("manage"), default=True, help_text=_("manage profile content"))
+    manage_content = models.BooleanField(_("manage"), default=False, help_text=_("manage profile content"))
     description = models.TextField(_("description"), blank=True)
     fake_user = models.BooleanField(_('fake User'), default=False)
 

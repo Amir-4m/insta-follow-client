@@ -36,9 +36,9 @@ INSTALLED_APPS = [
     'apps.insta_users',
     'apps.proxies',
     'apps.simulators',
+    'django_celery_beat',
 
     # Third Parties
-
 
     # Default
     'django.contrib.admin',
@@ -232,7 +232,6 @@ INSTA_FOLLOW_SETTINGS = {
 
     "max_lock": 5,
 }
-
 
 SIGN_UP_PROXY_IP = config('SIGN_UP_PROXY_IP')
 SIGN_UP_PROXY_PORT = config('SIGN_UP_PROXY_PORT', cast=int)
