@@ -25,6 +25,9 @@ stages:
 
 .build:
   stage: build
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+
   script:
 #    - cat ${PROJECT_ENV} > project/.env
     - docker-compose -f docker-compose.yml build
