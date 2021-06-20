@@ -91,7 +91,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class InstaUserAdmin(admin.ModelAdmin):
     action_form = RemoveBlockActionForm
     list_display = (
-        "username", "created_time", "updated_time", "user_id", "manage_content", "status", "blocked", "has_session", "has_server_key", "fake_user", "user_activity", "user_owner")
+        "username", "created_time", "updated_time", "user_id", "manage_content", "status", "blocked", "has_session", "has_server_key", "fake_user", "user_activity")
     list_filter = ("status", "manage_content", "fake_user", UserIdFilter, HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter,
                    CommentBlockFilter)
     date_hierarchy = "created_time"
