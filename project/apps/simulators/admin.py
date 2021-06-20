@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from utils.images import resize_image
 from .models import InstaImage, InstaVideo, Sentence
 
 
@@ -10,6 +11,10 @@ class InstaImageAdmin(admin.ModelAdmin):
     search_fields = ('id', 'image')
     filter_horizontal = ('categories',)
 
+    def save_model(self, request, obj, form, change):
+        super(InstaImageAdmin, self).save_model(request, obj, form, change)
+        if 'image' in form.changed_data:
+            resize_image(obj.image.path)
 
 @admin.register(InstaVideo)
 class InstaVideoAdmin(admin.ModelAdmin):

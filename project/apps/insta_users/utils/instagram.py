@@ -11,7 +11,7 @@ from fake_useragent import UserAgent
 
 from apps.insta_users.models import InstaAction
 from apps.proxies.models import Proxy
-from utils.images import resize_image
+from utils.images import resize_image, stories_shaper
 
 logger = logging.getLogger(__name__)
 
@@ -334,7 +334,7 @@ def upload_instagram_post(session, image_field, caption=''):
     microtime = int(datetime.now().timestamp())
 
     if image_field.width != image_field.height:
-        im_resized, image_size, image_data = resize_image(image_field)
+        im_resized, image_size, image_data = resize_image(image_field.path)
         image_width = im_resized.width
         image_height = im_resized.height
 
@@ -377,18 +377,21 @@ def upload_instagram_post(session, image_field, caption=''):
 
 def upload_instagram_story(session, image_field):
     microtime = int(datetime.now().timestamp())
+    im_resized, image_size, image_data = stories_shaper(image_field.path)
+    image_width = im_resized.width
+    image_height = im_resized.height
 
     headers = {
         "user-agent": INSTAGRAM_USER_AGENT,
         "content-type": "image/jpeg",
         "offset": "0",
         "x-entity-type": "image/jpeg",
-        "x-entity-length": f"{image_field.size}",
+        "x-entity-length": f"{image_size}",
         "x-entity-name": f"fb_uploader_{microtime}",
-        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_field.height},"upload_media_width":{image_field.width}}}',
+        "x-instagram-rupload-params": f'{{"media_type":1,"upload_id":"{microtime}","upload_media_height":{image_height},"upload_media_width":{image_width}}}',
     }
     session.headers.update(headers)
-    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_field.path, 'rb'))
+    _s1 = session.post(f"{INSTAGRAM_BASE_URL}/rupload_igphoto/fb_uploader_{microtime}", data=open(image_data, 'rb'))
     _s1.raise_for_status()
 
     headers = {

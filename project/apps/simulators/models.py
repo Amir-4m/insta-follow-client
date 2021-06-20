@@ -52,7 +52,8 @@ class InstaImage(InstaContent):
         (TYPE_PROFILE, _("profile")),
     )
 
-    image = models.ImageField(_('image'), upload_to='images', validators=[image_extension_validator, image_aspect_validator], help_text="Aspect ratio should be 1080x1080")
+    image = models.ImageField(_('image'), upload_to='images', validators=[image_extension_validator, ],
+                              help_text="Aspect ratio should be 1080x1080")
     caption = models.TextField(_('caption'), blank=True)
 
     content_type = models.CharField(_("type"), max_length=8, choices=CONTENT_TYPE_CHOICES, db_index=True)
