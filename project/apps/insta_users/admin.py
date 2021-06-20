@@ -100,7 +100,7 @@ class InstaUserAdmin(admin.ModelAdmin):
         self.actions = ('make_active', )
 
         if request.user.is_superuser:
-            self.actions = ('make_active', 'make_new', 'clear_session', 'remove_block')
+            self.actions = ('make_active', 'make_new', 'clear_session', 'remove_block', 'manage_true', 'manage_false')
         return super().get_actions(request)
 
     @admin.display
@@ -131,3 +131,11 @@ class InstaUserAdmin(admin.ModelAdmin):
     def remove_block(self, request, queryset):
         for q in queryset:
             q.remove_blocked(request.POST.get('unblock'))
+
+    @admin.action(description=_('Change manage content to True'))
+    def manage_true(self, request, queryset):
+        queryset.update(manage_content=True)
+
+    @admin.action(description=_('Change manage content to False'))
+    def manage_false(self, request, queryset):
+        queryset.update(manage_content=False)
