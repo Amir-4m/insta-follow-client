@@ -4,14 +4,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin.helpers import ActionForm
 from django import forms
 
-from admin_auto_filters.filters import AutocompleteFilter
 
 from .models import InstaUser, InstaContentCategory, InstaAction
-
-
-class UserActivityFilter(AutocompleteFilter):
-    title = 'User Filter'
-    field_name = 'user_owner'
 
 
 class RemoveBlockActionForm(ActionForm):
@@ -99,7 +93,7 @@ class InstaUserAdmin(admin.ModelAdmin):
     list_display = (
         "username", "created_time", "updated_time", "user_id", "manage_content", "status", "blocked", "has_session", "has_server_key", "fake_user", "user_activity", "user_owner")
     list_filter = ("status", "manage_content", "fake_user", UserIdFilter, HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter,
-                   CommentBlockFilter, UserActivityFilter, "user_owner")
+                   CommentBlockFilter)
     date_hierarchy = "created_time"
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)

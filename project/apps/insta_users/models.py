@@ -111,8 +111,6 @@ class InstaUser(models.Model):
 
     categories = models.ManyToManyField(InstaContentCategory)
 
-    user_owner = models.ForeignKey(User, on_delete=models.CASCADE)
-
     objects = LiveManager()
 
     class Meta:

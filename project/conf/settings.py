@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     'django_celery_beat',
 
     # Third Parties
-    'admin_auto_filters',
 
     # Default
     'django.contrib.admin',
