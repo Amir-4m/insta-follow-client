@@ -1,7 +1,11 @@
 stages:
   - build
-#  - test
+  #  - test
   - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
 
 .staging:
   only:
@@ -29,8 +33,9 @@ stages:
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN gitlab.hami.blue:5050
 
   script:
-#    - cat ${PROJECT_ENV} > project/.env
-    - docker-compose -f docker-compose.yml build
+    - docker pull $CONTAINER_RELEASE_IMAGE || true
+    - docker build --cache-from $CONTAINER_RELEASE_IMAGE -t $CONTAINER_RELEASE_IMAGE .
+    - docker push $CONTAINER_RELEASE_IMAGE
 
 #.test:
 #  stage: test
