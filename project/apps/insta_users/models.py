@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
@@ -109,6 +110,8 @@ class InstaUser(models.Model):
     blocked_data = models.JSONField(_('blocked data'), default=dict, editable=False)
 
     categories = models.ManyToManyField(InstaContentCategory)
+
+    user_owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
     objects = LiveManager()
 
