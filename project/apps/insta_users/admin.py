@@ -1,7 +1,9 @@
 from django.contrib import admin
+from django.contrib.admin.models import LogEntry
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin.helpers import ActionForm
 from django import forms
+
 
 from .models import InstaUser, InstaContentCategory, InstaAction
 
@@ -29,7 +31,7 @@ class GeneralFilter(admin.SimpleListFilter):
 class HasSessionFilter(GeneralFilter):
     title = _('has Session')
     parameter_name = 'ss'
-    
+
     def queryset(self, request, queryset):
         if self.value() == '1':
             return queryset.exclude(session='')
@@ -88,16 +90,26 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(InstaUser)
 class InstaUserAdmin(admin.ModelAdmin):
     action_form = RemoveBlockActionForm
-    list_display = ("username", "created_time", "updated_time", "user_id", "manage_content", "status", "blocked", "has_session", "has_server_key", "fake_user")
-    list_filter = ("status", "manage_content", "fake_user", UserIdFilter, HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter, CommentBlockFilter)
+    list_display = (
+        "username", "created_time", "updated_time", "user_id", "manage_content", "status", "blocked", "has_session", "has_server_key", "fake_user", "user_activity")
+    list_filter = ("status", "manage_content", "fake_user", UserIdFilter, HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter,
+                   CommentBlockFilter)
     date_hierarchy = "created_time"
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
     filter_horizontal = ('categories',)
     readonly_fields = ('blocked_data',)
 
+    def user_activity(self, obj):
+        actions = {1: "Addition", 2: "Change", 3: "Deletion"}
+        log = LogEntry.objects.filter(object_id=obj.id).last()
+        if log:
+            return f"{log.user}--{actions[log.action_flag]}"
+
+        return None
+
     def get_actions(self, request):
-        self.actions = ('make_active', )
+        self.actions = ('make_active',)
 
         if request.user.is_superuser:
             self.actions = ('make_active', 'make_new', 'clear_session', 'remove_block', 'manage_true', 'manage_false')
@@ -139,3 +151,30 @@ class InstaUserAdmin(admin.ModelAdmin):
     @admin.action(description=_('Change manage content to False'))
     def manage_false(self, request, queryset):
         queryset.update(manage_content=False)
+
+
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    date_hierarchy = 'action_time'
+
+    list_filter = [
+        'user',
+        'content_type',
+        'action_flag',
+    ]
+
+    search_fields = [
+        'object_repr',
+        'change_message',
+        'user'
+    ]
+
+    list_display = [
+        'action_time',
+        'user',
+        'content_type',
+        'action_flag',
+    ]
+
+    class Media:
+        pass
