@@ -58,6 +58,7 @@ variables:
     - git pull
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN gitlab.hami.blue:5050
     - docker pull $CONTAINER_RELEASE_IMAGE
+    - docker-compose down --remove-orphans
     - docker-compose up -d
 
 build_staging:
