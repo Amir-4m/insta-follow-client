@@ -2,10 +2,7 @@ version: '3.4'
 
 services:
   django-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deploy_build
+    image: ${CONTAINER_RELEASE_IMAGE}
     entrypoint: ["/entrypoint.sh"]
     env_file: ${PROJECT_ENV}
     restart: always
@@ -19,10 +16,7 @@ services:
       - 8000
 
   celery-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deploy_build
+    image: ${CONTAINER_RELEASE_IMAGE}
     restart: always
     env_file: ${PROJECT_ENV}
     command: celery -A conf worker -l info
@@ -33,10 +27,7 @@ services:
       - ${PROJECT_PATH}/logs:/logs
 
   celery-beat:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deploy_build
+    image: ${CONTAINER_RELEASE_IMAGE}
     env_file: ${PROJECT_ENV}
     restart: always
     command: celery -A conf beat -l info -s /var/run/celerybeat-schedule --pidfile=

@@ -54,7 +54,8 @@ variables:
   script:
     - cd $PROJECT_PATH
     - git pull
-    - docker-compose -f docker-compose.yml up -d --build --force-recreate
+    - docker pull $CONTAINER_RELEASE_IMAGE
+    - docker-compose -f docker-compose.yml up
 
 build_staging:
   environment:
