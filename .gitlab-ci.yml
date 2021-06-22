@@ -54,6 +54,7 @@ variables:
   script:
     - cd $PROJECT_PATH
     - git pull
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN gitlab.hami.blue:5050
     - docker pull $CONTAINER_RELEASE_IMAGE
     - docker-compose -f docker-compose.yml up
 
