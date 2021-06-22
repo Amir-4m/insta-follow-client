@@ -39,7 +39,7 @@ services:
 
 
   nginx:
-    build: ${CONTAINER_NGINX_IMAGE}
+    build: ./nginx
     volumes:
       - ${PROJECT_PATH}/media:/var/www/media
       - ${PROJECT_PATH}/static:/var/www/static
