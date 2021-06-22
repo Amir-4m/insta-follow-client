@@ -35,10 +35,7 @@ variables:
 
   script:
     - docker pull $CONTAINER_RELEASE_IMAGE || true
-    - docker pull $CONTAINER_NGINX_IMAGE || true
-
     - docker build --cache-from $CONTAINER_RELEASE_IMAGE -t $CONTAINER_RELEASE_IMAGE .
-
     - docker push $CONTAINER_RELEASE_IMAGE
 
 
