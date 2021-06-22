@@ -6,6 +6,8 @@ stages:
 variables:
   DOCKER_DRIVER: overlay2
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
+  CONTAINER_NGINX_IMAGE: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME/nginx:latest
+
 
 
 .staging:
@@ -35,8 +37,13 @@ variables:
 
   script:
     - docker pull $CONTAINER_RELEASE_IMAGE || true
+    - docker pull $CONTAINER_NGINX_IMAGE || true
+
     - docker build --cache-from $CONTAINER_RELEASE_IMAGE -t $CONTAINER_RELEASE_IMAGE .
+    - docker build --cache-from $CONTAINER_NGINX_IMAGE -t $CONTAINER_NGINX_IMAGE ./nginx/.
+
     - docker push $CONTAINER_RELEASE_IMAGE
+    - docker push $CONTAINER_NGINX_IMAGE
 
 
 #.test:
@@ -58,8 +65,10 @@ variables:
     - git pull
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN gitlab.hami.blue:5050
     - docker pull $CONTAINER_RELEASE_IMAGE
+    - docker pull $CONTAINER_NGINX_IMAGE
     - docker-compose down --remove-orphans
     - docker-compose up -d
+    - docker image prune -af
 
 build_staging:
   environment:
