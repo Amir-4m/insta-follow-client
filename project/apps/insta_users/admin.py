@@ -33,7 +33,7 @@ class UserActivityFilter(admin.SimpleListFilter):
 
         insta_user_id = LogEntry.objects.filter(user=self.value(), action_flag=1, content_type__model='instauser').values_list('object_id', flat=True)
 
-        insta_user_id_list = [int(i) for i in insta_user_id]
+        insta_user_id_list = list(map(int, insta_user_id))
         return queryset.filter(id__in=insta_user_id_list)
 
 
@@ -123,7 +123,6 @@ class InstaUserAdmin(admin.ModelAdmin):
     readonly_fields = ('blocked_data',)
 
     def user_activity(self, obj):
-        actions = {1: "Addition", 2: "Change", 3: "Deletion"}
         log = LogEntry.objects.filter(object_id=obj.id, object_repr=obj.username, content_type__model='instauser').last()
         if log:
             return f"{log.user}"
