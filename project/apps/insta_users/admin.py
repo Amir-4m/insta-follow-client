@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry
+from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin.helpers import ActionForm
 from django import forms
@@ -13,6 +14,27 @@ class RemoveBlockActionForm(ActionForm):
         choices=InstaAction.ACTION_CHOICES,
         help_text=_('to remove block for selected action')
     )
+
+
+class UserActivityFilter(admin.SimpleListFilter):
+    title = _('User Activity')
+    parameter_name = 'u-activity'
+
+    def lookups(self, request, model_admin):
+
+        user = get_user_model()
+        return (
+            (usr.id, usr.username) for usr in user.objects.all()
+        )
+
+    def queryset(self, request, queryset):
+        if not self.value():
+            return queryset
+
+        insta_user_id = LogEntry.objects.filter(user=self.value(), action_flag=1, content_type__model='instauser').values_list('object_id', flat=True)
+
+        insta_user_id_list = list(map(int, insta_user_id))
+        return queryset.filter(id__in=insta_user_id_list)
 
 
 class GeneralFilter(admin.SimpleListFilter):
@@ -93,7 +115,7 @@ class InstaUserAdmin(admin.ModelAdmin):
     list_display = (
         "username", "created_time", "updated_time", "user_id", "manage_content", "status", "blocked", "has_session", "has_server_key", "fake_user", "user_activity")
     list_filter = ("status", "manage_content", "fake_user", UserIdFilter, HasSessionFilter, HasServerKeyFilter, FollowBlockFilter, LikeBlockFilter,
-                   CommentBlockFilter)
+                   CommentBlockFilter, UserActivityFilter)
     date_hierarchy = "created_time"
     search_fields = ("username", "user_id")
     raw_id_fields = ('proxy',)
@@ -101,10 +123,9 @@ class InstaUserAdmin(admin.ModelAdmin):
     readonly_fields = ('blocked_data',)
 
     def user_activity(self, obj):
-        actions = {1: "Addition", 2: "Change", 3: "Deletion"}
-        log = LogEntry.objects.filter(object_id=obj.id).last()
+        log = LogEntry.objects.filter(object_id=obj.id, object_repr=obj.username, content_type__model='instauser').last()
         if log:
-            return f"{log.user}--{actions[log.action_flag]}"
+            return f"{log.user}"
 
         return None
 
