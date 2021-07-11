@@ -44,6 +44,11 @@ variables:
 
     - docker push $CONTAINER_RELEASE_IMAGE
     - docker push $CONTAINER_NGINX_IMAGE
+  only:
+    changes:
+      - project/requirements.txt
+      - Dockerfile
+      - docker-compose.yml
 
 
 #.test:
