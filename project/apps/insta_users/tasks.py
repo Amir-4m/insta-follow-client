@@ -143,14 +143,14 @@ def activate_insta_users():
     )
 
 
-@periodic_task(run_every=crontab(minute='*/15'))
-def reactivate_disabled_insta_users():
-    return InstaUser.objects.filter(
-        Q(status=InstaUser.STATUS_DISABLED, updated_time__lt=timezone.now() - timezone.timedelta(days=3)) |
-        Q(status=InstaUser.STATUS_LOGIN_LIMIT, updated_time__lt=timezone.now() - timezone.timedelta(hours=3))
-    ).update(
-        status=InstaUser.STATUS_ACTIVE
-    )
+# @periodic_task(run_every=crontab(minute='*/15'))
+# def reactivate_disabled_insta_users():
+#     return InstaUser.objects.filter(
+#         Q(status=InstaUser.STATUS_DISABLED, updated_time__lt=timezone.now() - timezone.timedelta(days=3)) |
+#         Q(status=InstaUser.STATUS_LOGIN_LIMIT, updated_time__lt=timezone.now() - timezone.timedelta(hours=3))
+#     ).update(
+#         status=InstaUser.STATUS_ACTIVE
+#     )
 
 
 @periodic_task(run_every=crontab(minute='0', hour='0'))
