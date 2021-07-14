@@ -99,48 +99,48 @@ def instagram_login_task(insta_user_id):
 
     cache.delete(INSTA_USER_LOCK_KEY % insta_user_id)
 
-#
-# @periodic_task(run_every=crontab(minute='*'))
-# def activate_insta_users():
-#     no_session_users = InstaUser.objects.filter(
-#         status=InstaUser.STATUS_NEW,
-#         session='',
-#     ).values_list('id', flat=True)[:2]
-#
-#     for insta_user_id in no_session_users:
-#         _ck = INSTA_USER_LOCK_KEY % insta_user_id
-#         if cache.get(_ck):
-#             continue
-#         cache.set(_ck, True, 600)
-#         instagram_login_task.delay(insta_user_id)
-#
-#     no_uuid_users = InstaUser.objects.filter(
-#         status=InstaUser.STATUS_ACTIVE,
-#         server_key__isnull=True,
-#     ).exclude(session='').values_list('id', flat=True)
-#
-#     for insta_user_id in no_uuid_users:
-#         insta_follow_login_task.delay(insta_user_id)
-#
-#     # make Active Insta User which been blocked to NEW for simulator
-#     InstaUser.objects.filter(
-#         status=InstaUser.STATUS_ACTIVE,
-#         session='',
-#     ).update(
-#         status=InstaUser.STATUS_NEW,
-#         updated_time=timezone.now()
-#     )
-#
-#     # Re-Active Insta User after simulator works
-#     InstaUser.objects.filter(
-#         status=InstaUser.STATUS_NEW,
-#         updated_time__lt=timezone.now() - timezone.timedelta(days=2)
-#     ).exclude(
-#         session=''
-#     ).update(
-#         status=InstaUser.STATUS_ACTIVE,
-#         updated_time=timezone.now()
-#     )
+
+@periodic_task(run_every=crontab(minute='*'))
+def activate_insta_users():
+    # no_session_users = InstaUser.objects.filter(
+    #     status=InstaUser.STATUS_NEW,
+    #     session='',
+    # ).values_list('id', flat=True)[:2]
+    #
+    # for insta_user_id in no_session_users:
+    #     _ck = INSTA_USER_LOCK_KEY % insta_user_id
+    #     if cache.get(_ck):
+    #         continue
+    #     cache.set(_ck, True, 600)
+    #     instagram_login_task.delay(insta_user_id)
+
+    no_uuid_users = InstaUser.objects.filter(
+        status=InstaUser.STATUS_ACTIVE,
+        server_key__isnull=True,
+    ).exclude(session='').values_list('id', flat=True)
+
+    for insta_user_id in no_uuid_users:
+        insta_follow_login_task.delay(insta_user_id)
+
+    # # make Active Insta User which been blocked to NEW for simulator
+    # InstaUser.objects.filter(
+    #     status=InstaUser.STATUS_ACTIVE,
+    #     session='',
+    # ).update(
+    #     status=InstaUser.STATUS_NEW,
+    #     updated_time=timezone.now()
+    # )
+    #
+    # # Re-Active Insta User after simulator works
+    # InstaUser.objects.filter(
+    #     status=InstaUser.STATUS_NEW,
+    #     updated_time__lt=timezone.now() - timezone.timedelta(days=2)
+    # ).exclude(
+    #     session=''
+    # ).update(
+    #     status=InstaUser.STATUS_ACTIVE,
+    #     updated_time=timezone.now()
+    # )
 
 
 # @periodic_task(run_every=crontab(minute='*/15'))
